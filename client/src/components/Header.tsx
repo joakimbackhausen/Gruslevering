@@ -28,7 +28,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [location] = useLocation();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const megaTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const megaTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
   const { totalItems, setIsOpen } = useCart();
 
   const { data: categories = [] } = useQuery<Category[]>({
