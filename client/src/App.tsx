@@ -7,7 +7,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { lazy, Suspense } from "react";
 import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
-import MachineDetail from "@/pages/MachineDetail";
+import ProductDetail from "@/pages/ProductDetail";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Checkout from "@/pages/Checkout";
@@ -22,7 +22,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/shop/:kategori?" component={Shop} />
-        <Route path="/produkt/:id" component={MachineDetail} />
+        <Route path="/produkt/:id" component={ProductDetail} />
         <Route path="/volumenberegner" component={VolumeCalculator} />
         <Route path="/levering" component={Delivery} />
         <Route path="/om-os" component={About} />
