@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/contexts/CartContext";
 import { lazy, Suspense } from "react";
 import Home from "@/pages/Home";
-import Machines from "@/pages/Machines";
+import Shop from "@/pages/Shop";
 import MachineDetail from "@/pages/MachineDetail";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
@@ -21,7 +21,7 @@ function Router() {
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Indlæser...</div>}>
       <Switch>
         <Route path="/" component={Home} />
-        <Route path="/shop/:kategori?" component={Machines} />
+        <Route path="/shop/:kategori?" component={Shop} />
         <Route path="/produkt/:id" component={MachineDetail} />
         <Route path="/volumenberegner" component={VolumeCalculator} />
         <Route path="/levering" component={Delivery} />
