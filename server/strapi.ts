@@ -215,12 +215,12 @@ async function refreshCache(): Promise<void> {
 
     // Fetch categories with parent relation
     const strapiCategories = await fetchAllPages<StrapiCategory>(
-      '/api/categories?populate=parent,children,products&sort=sortOrder:asc'
+      '/api/categories?populate=*&sort=sortOrder:asc'
     );
 
     // Fetch products with category relation
     const strapiProducts = await fetchAllPages<StrapiProduct>(
-      '/api/products?populate=category&sort=title:asc'
+      '/api/products?populate=*&sort=title:asc'
     );
 
     // Transform categories
@@ -282,7 +282,7 @@ export async function fetchProductById(id: string): Promise<Product | undefined>
   // If not in cache, try direct Strapi lookup by slug
   try {
     const res = await strapiGet<StrapiListResponse<StrapiProduct>>(
-      `/api/products?filters[slug][$eq]=${encodeURIComponent(id)}&populate=category`
+      `/api/products?filters[slug][$eq]=${encodeURIComponent(id)}&populate=*`
     );
     if (res.data.length > 0) {
       return mapStrapiProduct(res.data[0]);
@@ -294,7 +294,7 @@ export async function fetchProductById(id: string): Promise<Product | undefined>
   // Try by Strapi document ID
   try {
     const res = await strapiGet<StrapiSingleResponse<StrapiProduct>>(
-      `/api/products/${encodeURIComponent(id)}?populate=category`
+      `/api/products/${encodeURIComponent(id)}?populate=*`
     );
     if (res.data) {
       return mapStrapiProduct(res.data);

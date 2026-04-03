@@ -280,7 +280,6 @@ function buildStrapiProduct(
     unit: "bigbag",
     deliveryIncluded: true,
     featured: false,
-    status: "published",
   };
 
   // Sale price (only if different from regular)
