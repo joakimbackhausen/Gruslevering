@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, Search, ShoppingBag, Phone, Mail, Truck, ChevronDown } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
 import CartDrawer from './CartDrawer';
@@ -16,20 +15,24 @@ interface Category {
 }
 
 const NAV_LINKS = [
-  { label: 'Produkter', href: '/shop', hasMega: true },
-  { label: 'Levering', href: '/levering', hasMega: false },
-  { label: 'Om os', href: '/om-os', hasMega: false },
-  { label: 'Kontakt', href: '/kontakt', hasMega: false },
+  { label: 'Produkter', href: '/shop', hasDropdown: true },
+  { label: 'Levering', href: '/levering' },
+  { label: 'Beregner', href: '/volumenberegner' },
+  { label: 'Om os', href: '/om-os' },
+  { label: 'Kontakt', href: '/kontakt' },
 ];
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [megaOpen, setMegaOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [announcementVisible, setAnnouncementVisible] = useState(true);
+  const [cartPulse, setCartPulse] = useState(false);
   const [location] = useLocation();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const megaTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const dropdownTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
   const { totalItems, setIsOpen } = useCart();
+  const prevTotalItems = useRef(totalItems);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -38,9 +41,8 @@ export default function Header() {
   });
 
   const parentCategories = categories.filter((c) => c.parentId === null && c.count > 0);
-  const getChildren = (parentId: number) =>
-    categories.filter((c) => c.parentId === parentId && c.count > 0).sort((a, b) => b.count - a.count);
 
+  // Update CSS var for header height
   const updateCSSVar = useCallback(() => {
     const h = wrapperRef.current?.getBoundingClientRect().height || 0;
     document.documentElement.style.setProperty('--header-h', `${Math.round(h)}px`);
@@ -51,27 +53,44 @@ export default function Header() {
     window.addEventListener('resize', updateCSSVar);
     if (document.fonts?.ready) document.fonts.ready.then(updateCSSVar);
     return () => window.removeEventListener('resize', updateCSSVar);
-  }, [updateCSSVar]);
+  }, [updateCSSVar, announcementVisible]);
 
+  // Scroll detection
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close mobile menu on route change
+  // Close menus on route change
   useEffect(() => {
     setMobileOpen(false);
-    setMegaOpen(false);
+    setDropdownOpen(false);
   }, [location]);
 
-  const handleMegaEnter = () => {
-    clearTimeout(megaTimeout.current);
-    setMegaOpen(true);
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
+  // Cart pulse animation when items change
+  useEffect(() => {
+    if (totalItems > prevTotalItems.current) {
+      setCartPulse(true);
+      const t = setTimeout(() => setCartPulse(false), 300);
+      return () => clearTimeout(t);
+    }
+    prevTotalItems.current = totalItems;
+  }, [totalItems]);
+
+  const handleDropdownEnter = () => {
+    clearTimeout(dropdownTimeout.current);
+    setDropdownOpen(true);
   };
 
-  const handleMegaLeave = () => {
-    megaTimeout.current = setTimeout(() => setMegaOpen(false), 150);
+  const handleDropdownLeave = () => {
+    dropdownTimeout.current = setTimeout(() => setDropdownOpen(false), 180);
   };
 
   const isActive = (href: string) => {
@@ -81,139 +100,178 @@ export default function Header() {
 
   return (
     <div ref={wrapperRef} className="fixed top-0 left-0 right-0 z-50">
-      {/* Top info bar - hidden on mobile */}
-      <div className="hidden lg:block" style={{ backgroundColor: 'var(--grus-dark)' }}>
-        <div className="max-w-[1260px] mx-auto px-5 sm:px-6 xl:px-10 h-10 flex items-center justify-between text-[13px]">
-          <div className="flex items-center gap-6 text-gray-300">
-            <a
-              href="tel:+4572494444"
-              className="flex items-center gap-1.5 hover:text-white transition-colors"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              +45 72 49 44 44
-            </a>
-            <span className="text-gray-600">|</span>
-            <a
-              href="mailto:Info@kaervangmaterialer.dk"
-              className="flex items-center gap-1.5 hover:text-white transition-colors"
-            >
-              <Mail className="w-3.5 h-3.5" />
-              Info@kaervangmaterialer.dk
-            </a>
-          </div>
-          <div className="flex items-center gap-1.5 text-gray-300">
-            <Truck className="w-3.5 h-3.5" />
+      {/* Announcement bar */}
+      {announcementVisible && (
+        <div
+          className="relative flex items-center justify-center h-7"
+          style={{ backgroundColor: 'var(--grus-dark)' }}
+        >
+          <p
+            className="font-sans text-[10px] uppercase tracking-[0.2em] text-center"
+            style={{ color: 'var(--grus-sand)' }}
+          >
             Fri levering i hele Danmark
-          </div>
+          </p>
+          <button
+            onClick={() => setAnnouncementVisible(false)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+            aria-label="Luk"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <line x1="1" y1="1" x2="9" y2="9" />
+              <line x1="9" y1="1" x2="1" y2="9" />
+            </svg>
+          </button>
         </div>
-      </div>
+      )}
 
       {/* Main header */}
       <header
-        className={`bg-white/95 backdrop-blur-md h-[72px] transition-shadow duration-300 ${
-          scrolled ? 'shadow-[0_2px_20px_rgba(0,0,0,0.08)]' : 'border-b border-gray-100'
+        className={`transition-all duration-300 ${
+          scrolled ? 'glass shadow-[0_1px_12px_rgba(0,0,0,0.06)]' : 'bg-transparent'
         }`}
+        style={{ height: 'var(--header-main-h, 72px)' }}
       >
+        <style>{`
+          :root { --header-main-h: 72px; }
+          @media (max-width: 1023px) { :root { --header-main-h: 60px; } }
+        `}</style>
+
         <div className="max-w-[1260px] mx-auto px-5 sm:px-6 xl:px-10 h-full">
           <div className="flex items-center justify-between h-full">
-            {/* Mobile hamburger - left */}
-            <button
-              className="lg:hidden text-[#1a1a2e] p-1 -ml-1"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Menu"
-            >
-              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+
+            {/* Left: hamburger (mobile) */}
+            <div className="lg:hidden flex items-center">
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="p-1.5 -ml-1.5 transition-colors"
+                style={{ color: 'var(--grus-dark)' }}
+                aria-label="Menu"
+              >
+                {mobileOpen ? (
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <line x1="4" y1="4" x2="18" y2="18" />
+                    <line x1="18" y1="4" x2="4" y2="18" />
+                  </svg>
+                ) : (
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <line x1="3" y1="6" x2="19" y2="6" />
+                    <line x1="3" y1="11" x2="19" y2="11" />
+                    <line x1="3" y1="16" x2="15" y2="16" />
+                  </svg>
+                )}
+              </button>
+            </div>
 
             {/* Logo */}
-            <Link href="/" className="flex items-center shrink-0 lg:mr-10">
-              <span className="text-[26px] font-extrabold tracking-tight leading-none">
-                <span style={{ color: 'var(--grus-green)' }}>Grus</span>
-                <span className="text-[#1a1a2e]">levering</span>
-                <span className="text-[15px] font-semibold text-gray-400">.dk</span>
+            <Link
+              href="/"
+              className="flex flex-col items-start leading-none shrink-0 lg:mr-12 absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0"
+            >
+              <span
+                className="font-display text-[20px] sm:text-[22px] font-semibold uppercase tracking-[0.08em]"
+                style={{ color: 'var(--grus-dark)' }}
+              >
+                GRUSLEVERING
+              </span>
+              <span
+                className="font-display text-[10px] uppercase tracking-[0.25em] -mt-0.5"
+                style={{ color: 'var(--grus-accent)' }}
+              >
+                .DK
               </span>
             </Link>
 
-            {/* Desktop nav - center */}
-            <nav className="hidden lg:flex items-center h-full flex-1 justify-center">
+            {/* Desktop navigation */}
+            <nav className="hidden lg:flex items-center h-full flex-1 justify-center gap-1">
               {NAV_LINKS.map((link) => (
                 <div
                   key={link.href}
                   className="relative h-full flex items-center"
-                  onMouseEnter={() => link.hasMega ? handleMegaEnter() : setMegaOpen(false)}
-                  onMouseLeave={link.hasMega ? handleMegaLeave : undefined}
+                  onMouseEnter={() => link.hasDropdown ? handleDropdownEnter() : setDropdownOpen(false)}
+                  onMouseLeave={link.hasDropdown ? handleDropdownLeave : undefined}
                 >
                   <Link
                     href={link.href}
-                    className={`h-full flex items-center gap-1 px-5 text-[15px] font-medium transition-colors border-b-2 ${
-                      isActive(link.href)
-                        ? 'text-[var(--grus-green)] border-[var(--grus-green)]'
-                        : 'text-[#333] hover:text-[var(--grus-green)] border-transparent'
-                    }`}
+                    className="group relative h-full flex items-center px-4 font-display text-[13px] uppercase tracking-[0.12em] font-medium transition-opacity"
+                    style={{
+                      color: 'var(--grus-dark)',
+                      opacity: isActive(link.href) ? 1 : 0.65,
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                    onMouseLeave={(e) => {
+                      if (!isActive(link.href)) (e.currentTarget as HTMLElement).style.opacity = '0.65';
+                    }}
                   >
                     {link.label}
-                    {link.hasMega && <ChevronDown className="w-3.5 h-3.5 opacity-50" />}
+                    {link.hasDropdown && (
+                      <svg
+                        width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor"
+                        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                        className="ml-1.5 opacity-50"
+                      >
+                        <polyline points="1,1 4,4 7,1" />
+                      </svg>
+                    )}
+                    {/* Active / hover underline */}
+                    <span
+                      className="absolute bottom-5 left-4 right-4 h-[1.5px] origin-left transition-transform duration-300"
+                      style={{
+                        backgroundColor: 'var(--grus-dark)',
+                        transform: isActive(link.href) ? 'scaleX(1)' : 'scaleX(0)',
+                      }}
+                    />
+                    {/* Hover underline via CSS (we use a second span for the hover effect) */}
+                    {!isActive(link.href) && (
+                      <span
+                        className="absolute bottom-5 left-4 right-4 h-[1.5px] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"
+                        style={{ backgroundColor: 'var(--grus-dark)' }}
+                      />
+                    )}
                   </Link>
 
-                  {/* Mega dropdown for Produkter */}
-                  {link.hasMega && megaOpen && (
+                  {/* Products dropdown */}
+                  {link.hasDropdown && dropdownOpen && (
                     <div
-                      className="absolute top-full left-1/2 -translate-x-1/2 pt-0"
-                      onMouseEnter={handleMegaEnter}
-                      onMouseLeave={handleMegaLeave}
+                      className="absolute top-full left-0 pt-2"
+                      onMouseEnter={handleDropdownEnter}
+                      onMouseLeave={handleDropdownLeave}
                     >
-                      <div className="bg-white shadow-[0_20px_60px_rgba(0,0,0,0.12)] border-t-2 border-[var(--grus-green)] rounded-b-lg min-w-[600px]">
-                        <div className="p-6">
-                          <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-                            {parentCategories.map((cat) => {
-                              const children = getChildren(cat.id);
-                              return (
-                                <div key={cat.id} className="mb-4">
-                                  <Link
-                                    href={`/shop/${cat.slug}`}
-                                    className="text-[14px] font-semibold text-[#1a1a2e] hover:text-[var(--grus-green)] transition-colors"
-                                    onClick={() => setMegaOpen(false)}
-                                  >
-                                    {cat.name}
-                                  </Link>
-                                  {children.length > 0 && (
-                                    <div className="mt-1.5 space-y-0.5">
-                                      {children.slice(0, 5).map((child) => (
-                                        <Link
-                                          key={child.id}
-                                          href={`/shop/${child.slug}`}
-                                          className="block text-[13px] text-gray-500 hover:text-[var(--grus-green)] transition-colors py-0.5"
-                                          onClick={() => setMegaOpen(false)}
-                                        >
-                                          {child.name}
-                                          <span className="text-[11px] text-gray-300 ml-1">({child.count})</span>
-                                        </Link>
-                                      ))}
-                                      {children.length > 5 && (
-                                        <Link
-                                          href={`/shop/${cat.slug}`}
-                                          className="block text-[12px] font-medium text-[var(--grus-green)] hover:underline py-0.5"
-                                          onClick={() => setMegaOpen(false)}
-                                        >
-                                          Se alle {cat.count} produkter →
-                                        </Link>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                        <div className="border-t border-gray-100 px-6 py-3">
+                      <div
+                        className="bg-white/95 backdrop-blur-xl border border-black/[0.06] shadow-[0_12px_40px_rgba(0,0,0,0.1)] min-w-[240px]"
+                        style={{ borderTop: '2px solid var(--grus-dark)' }}
+                      >
+                        <div className="py-2">
                           <Link
                             href="/shop"
-                            className="text-[13px] font-semibold hover:underline transition-colors"
-                            style={{ color: 'var(--grus-green)' }}
-                            onClick={() => setMegaOpen(false)}
+                            className="block px-5 py-2.5 font-display text-[12px] uppercase tracking-[0.1em] font-semibold transition-colors"
+                            style={{ color: 'var(--grus-dark)' }}
+                            onClick={() => setDropdownOpen(false)}
                           >
-                            Se hele sortimentet →
+                            Alle produkter
                           </Link>
+                          <div
+                            className="mx-5 h-px my-1"
+                            style={{ backgroundColor: 'var(--grus-sand)' }}
+                          />
+                          {parentCategories.map((cat) => (
+                            <Link
+                              key={cat.id}
+                              href={`/shop/${cat.slug}`}
+                              className="group/item flex items-center justify-between px-5 py-2 font-sans text-[13px] transition-all hover:pl-6"
+                              style={{ color: 'var(--grus-dark)' }}
+                              onClick={() => setDropdownOpen(false)}
+                            >
+                              <span className="opacity-70 group-hover/item:opacity-100 transition-opacity">
+                                {cat.name}
+                              </span>
+                              <span
+                                className="text-[11px] opacity-30 font-display"
+                              >
+                                {cat.count}
+                              </span>
+                            </Link>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -222,24 +280,40 @@ export default function Header() {
               ))}
             </nav>
 
-            {/* Right icons */}
-            <div className="flex items-center gap-4">
-              <button
-                className="text-gray-400 hover:text-[var(--grus-green)] transition-colors hidden sm:block"
-                aria-label="Soeg"
+            {/* Right side */}
+            <div className="flex items-center gap-5">
+              {/* Phone - desktop only */}
+              <a
+                href="tel:+4572494444"
+                className="hidden lg:flex items-center gap-1.5 font-sans text-[12px] tracking-wide transition-opacity opacity-50 hover:opacity-100"
+                style={{ color: 'var(--grus-dark)' }}
               >
-                <Search className="w-[22px] h-[22px]" />
-              </button>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+                72 49 44 44
+              </a>
+
+              {/* Cart */}
               <button
-                className="relative text-gray-400 hover:text-[var(--grus-green)] transition-colors"
+                className="relative p-1 transition-colors"
+                style={{ color: 'var(--grus-dark)' }}
                 onClick={() => setIsOpen(true)}
                 aria-label="Kurv"
               >
-                <ShoppingBag className="w-[22px] h-[22px]" />
+                <svg
+                  width="21" height="21" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                  className={`transition-transform duration-300 ${cartPulse ? 'scale-110' : 'scale-100'}`}
+                >
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <path d="M16 10a4 4 0 0 1-8 0" />
+                </svg>
                 {totalItems > 0 && (
                   <span
-                    className="absolute -top-1.5 -right-2 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full"
-                    style={{ backgroundColor: 'var(--grus-green)' }}
+                    className="absolute -top-0.5 -right-1 font-display text-[10px] font-semibold leading-none"
+                    style={{ color: 'var(--grus-accent)' }}
                   >
                     {totalItems}
                   </span>
@@ -248,74 +322,97 @@ export default function Header() {
             </div>
           </div>
         </div>
-
-        {/* Mobile slide-out drawer */}
-        {mobileOpen && (
-          <div className="lg:hidden fixed inset-0 top-[72px] z-40">
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/30"
-              onClick={() => setMobileOpen(false)}
-            />
-            {/* Drawer */}
-            <div className="relative w-[300px] max-w-[85vw] h-full bg-white shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-200">
-              <nav className="py-4">
-                {NAV_LINKS.map((link) => {
-                  if (link.hasMega) {
-                    return (
-                      <div key={link.href}>
-                        <Link
-                          href={link.href}
-                          className="block px-6 py-3.5 text-[16px] font-semibold text-[#1a1a2e] hover:text-[var(--grus-green)] transition-colors"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          {link.label}
-                        </Link>
-                        <div className="bg-gray-50/70">
-                          {parentCategories.map((cat) => (
-                            <Link
-                              key={cat.id}
-                              href={`/shop/${cat.slug}`}
-                              className="block pl-10 pr-6 py-2.5 text-[14px] text-gray-600 hover:text-[var(--grus-green)] transition-colors"
-                              onClick={() => setMobileOpen(false)}
-                            >
-                              {cat.name}
-                              <span className="text-[12px] text-gray-300 ml-1">({cat.count})</span>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="block px-6 py-3.5 text-[16px] font-semibold text-[#1a1a2e] hover:text-[var(--grus-green)] transition-colors"
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      {link.label}
-                    </Link>
-                  );
-                })}
-              </nav>
-
-              {/* Mobile contact info */}
-              <div className="px-6 pb-6 pt-4 border-t border-gray-100 space-y-3 text-[14px] text-gray-500">
-                <a href="tel:+4572494444" className="flex items-center gap-2 hover:text-[var(--grus-green)]">
-                  <Phone className="w-4 h-4" /> +45 72 49 44 44
-                </a>
-                <a href="mailto:Info@kaervangmaterialer.dk" className="flex items-center gap-2 hover:text-[var(--grus-green)]">
-                  <Mail className="w-4 h-4" /> Info@kaervangmaterialer.dk
-                </a>
-                <div className="flex items-center gap-2 text-gray-400 pt-1">
-                  <Truck className="w-4 h-4" /> Fri levering i hele Danmark
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </header>
+
+      {/* Mobile full-screen overlay */}
+      <div
+        className={`lg:hidden fixed inset-0 z-[60] transition-all duration-500 ${
+          mobileOpen
+            ? 'opacity-100 pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
+        }`}
+        style={{ backgroundColor: 'var(--grus-dark)' }}
+      >
+        {/* Close button */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute top-5 right-5 p-2 text-white/50 hover:text-white transition-colors z-10"
+          aria-label="Luk menu"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <line x1="4" y1="4" x2="20" y2="20" />
+            <line x1="20" y1="4" x2="4" y2="20" />
+          </svg>
+        </button>
+
+        {/* Mobile nav links */}
+        <nav className="flex flex-col justify-center h-full px-10">
+          {NAV_LINKS.map((link, i) => (
+            <div key={link.href}>
+              <Link
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="block py-3 transition-all duration-500"
+                style={{
+                  transform: mobileOpen ? 'translateY(0)' : 'translateY(20px)',
+                  opacity: mobileOpen ? 1 : 0,
+                  transitionDelay: mobileOpen ? `${100 + i * 60}ms` : '0ms',
+                }}
+              >
+                <span
+                  className="font-display text-[32px] sm:text-[38px] font-semibold uppercase tracking-[0.06em] transition-colors"
+                  style={{
+                    color: isActive(link.href) ? 'var(--grus-accent)' : 'var(--grus-sand)',
+                  }}
+                >
+                  {link.label}
+                </span>
+              </Link>
+
+              {/* Category sub-links under Produkter */}
+              {link.hasDropdown && parentCategories.length > 0 && (
+                <div className="ml-1 mb-2">
+                  {parentCategories.slice(0, 6).map((cat, ci) => (
+                    <Link
+                      key={cat.id}
+                      href={`/shop/${cat.slug}`}
+                      onClick={() => setMobileOpen(false)}
+                      className="block py-1.5 transition-all duration-500"
+                      style={{
+                        transform: mobileOpen ? 'translateY(0)' : 'translateY(12px)',
+                        opacity: mobileOpen ? 0.5 : 0,
+                        transitionDelay: mobileOpen ? `${160 + i * 60 + ci * 40}ms` : '0ms',
+                      }}
+                    >
+                      <span className="font-sans text-[14px] tracking-wide text-white/50 hover:text-white transition-colors">
+                        {cat.name}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Phone at bottom of mobile menu */}
+          <div
+            className="mt-10 pt-6 transition-all duration-500"
+            style={{
+              borderTop: '1px solid rgba(255,255,255,0.1)',
+              transform: mobileOpen ? 'translateY(0)' : 'translateY(20px)',
+              opacity: mobileOpen ? 0.4 : 0,
+              transitionDelay: mobileOpen ? '450ms' : '0ms',
+            }}
+          >
+            <a
+              href="tel:+4572494444"
+              className="font-sans text-[13px] tracking-wider text-white/50 hover:text-white transition-colors"
+            >
+              +45 72 49 44 44
+            </a>
+          </div>
+        </nav>
+      </div>
 
       <CartDrawer />
     </div>
