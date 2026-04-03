@@ -63,7 +63,7 @@ export default function Footer() {
               <div key={usp.title} className="flex flex-col items-center text-center gap-2">
                 <usp.icon className="w-6 h-6 text-[var(--grus-green)]" />
                 <span className="text-sm font-semibold text-white">{usp.title}</span>
-                <span className="text-sm text-[var(--grus-sand)]/70">{usp.description}</span>
+                <span className="text-sm text-gray-400">{usp.description}</span>
               </div>
             ))}
           </div>
@@ -83,7 +83,7 @@ export default function Footer() {
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="text-sm text-[var(--grus-sand)] hover:text-white transition-colors"
+                    className="text-sm text-gray-400 hover:text-white transition-colors"
                   >
                     {item.label}
                   </Link>
@@ -102,7 +102,7 @@ export default function Footer() {
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="text-sm text-[var(--grus-sand)] hover:text-white transition-colors"
+                    className="text-sm text-gray-400 hover:text-white transition-colors"
                   >
                     {item.label}
                   </Link>
@@ -116,10 +116,10 @@ export default function Footer() {
             <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
               Kontakt
             </h4>
-            <ul className="space-y-2.5 text-sm text-[var(--grus-sand)]/70">
+            <ul className="space-y-2.5 text-sm text-gray-400">
               <li className="font-medium text-white/80">Kaervang Materialer ApS</li>
               <li className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-[var(--grus-stone)]" />
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-[var(--grus-green)]" />
                 <span>Tylstrupvej 1<br />9382 Tylstrup</span>
               </li>
               <li>
@@ -127,7 +127,7 @@ export default function Footer() {
                   href="tel:+4572494444"
                   className="flex items-center gap-2 hover:text-white transition-colors"
                 >
-                  <Phone className="w-4 h-4 shrink-0 text-[var(--grus-stone)]" />
+                  <Phone className="w-4 h-4 shrink-0 text-[var(--grus-green)]" />
                   +45 72 49 44 44
                 </a>
               </li>
@@ -136,12 +136,12 @@ export default function Footer() {
                   href="mailto:Info@kaervangmaterialer.dk"
                   className="flex items-center gap-2 hover:text-white transition-colors"
                 >
-                  <Mail className="w-4 h-4 shrink-0 text-[var(--grus-stone)]" />
+                  <Mail className="w-4 h-4 shrink-0 text-[var(--grus-green)]" />
                   Info@kaervangmaterialer.dk
                 </a>
               </li>
               <li className="flex items-center gap-2">
-                <Clock className="w-4 h-4 shrink-0 text-[var(--grus-stone)]" />
+                <Clock className="w-4 h-4 shrink-0 text-[var(--grus-green)]" />
                 Hverdage 8:00 - 16:00
               </li>
             </ul>
@@ -172,7 +172,7 @@ export default function Footer() {
                 <Instagram className="w-4 h-4 text-gray-300" />
               </a>
             </div>
-            <div className="flex items-center gap-2 text-sm text-[var(--grus-sand)]/70">
+            <div className="flex items-center gap-2 text-sm text-gray-400">
               <Star className="w-4 h-4 text-[#00b67a] fill-[#00b67a]" />
               <span>Trustpilot</span>
             </div>

@@ -43,7 +43,7 @@ function ProductCard({ product }: { product: Product }) {
       className="group block bg-white rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md"
       style={{ border: '1px solid var(--grus-border)' }}
     >
-      <div className="relative aspect-square p-3" style={{ backgroundColor: 'var(--grus-cream)' }}>
+      <div className="relative aspect-square p-3" style={{ backgroundColor: 'var(--grus-sand)' }}>
         {product.image ? (
           <img
             src={product.image}
@@ -288,7 +288,7 @@ export default function ProductDetail() {
             {/* LEFT: Image Gallery */}
             <div className="min-w-0">
               {/* Main image */}
-              <div className="aspect-square rounded-xl p-4 overflow-hidden" style={{ backgroundColor: 'var(--grus-cream)' }}>
+              <div className="aspect-square rounded-xl p-4 overflow-hidden" style={{ backgroundColor: 'var(--grus-sand)' }}>
                 {images.length > 0 && images[0] ? (
                   <img
                     key={currentImageIndex}

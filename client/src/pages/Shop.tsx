@@ -66,7 +66,7 @@ function matchesPriceRange(price: number, range: PriceRange): boolean {
 function SkeletonCard() {
   return (
     <div className="bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden">
-      <div className="aspect-[3/4] bg-[var(--grus-cream)] animate-pulse" />
+      <div className="aspect-[3/4] bg-[var(--grus-sand)] animate-pulse" />
       <div className="p-4 space-y-2">
         <div className="h-3 w-16 rounded bg-[var(--grus-sand)] animate-pulse" />
         <div className="h-4 w-3/4 rounded bg-[var(--grus-sand)] animate-pulse" />
@@ -111,10 +111,10 @@ function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={productUrl}
-      className="group block bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden transition-all duration-200 hover:shadow-md hover:border-[var(--grus-green)]/30"
+      className="group block bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden transition-all duration-200 hover:shadow-md"
     >
       {/* Image */}
-      <div className="relative aspect-[3/4] bg-[var(--grus-cream)] p-3">
+      <div className="relative aspect-[3/4] bg-[var(--grus-sand)] p-3">
         {product.image ? (
           <img
             src={product.image}
