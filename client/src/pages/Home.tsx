@@ -1,57 +1,98 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'wouter';
-import { Loader2, ArrowRight, Truck, Zap, Flag, Star, ShoppingCart, Calculator, Shield, MapPin, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  ArrowRight,
+  ArrowDown,
+  Truck,
+  Shield,
+  Headphones,
+  Calculator,
+  ChevronRight,
+} from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SmartImage from '@/components/SmartImage';
-import { useCart } from '@/contexts/CartContext';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import type { Product, Category } from '@/types/product';
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK', minimumFractionDigits: 0 }).format(price);
-};
+/* ── Helpers ── */
 
-function Reveal({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat('da-DK', {
+    style: 'currency',
+    currency: 'DKK',
+    minimumFractionDigits: 0,
+  }).format(price);
+
+/* ── Reveal (IntersectionObserver scroll animation) ── */
+
+function Reveal({
+  children,
+  className = '',
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
-  const [v, setV] = useState(false);
+  const [visible, setVisible] = useState(false);
+
   useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setV(true); }, { threshold: 0.08 });
-    obs.observe(el); return () => obs.disconnect();
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) setVisible(true);
+      },
+      { threshold: 0.08 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
+
   return (
-    <div ref={ref} className={`transition-all duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${v ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${className}`} style={{ transitionDelay: `${delay}ms` }}>
+    <div
+      ref={ref}
+      className={`transition-all duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+      } ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
       {children}
     </div>
   );
 }
 
+/* ── Gradient placeholders for categories ── */
+
+const categoryGradients = [
+  'linear-gradient(135deg, #2d4a2d 0%, #3d6a3a 50%, #4a7a48 100%)',
+  'linear-gradient(135deg, #8a7560 0%, #b5a08a 50%, #c8b49a 100%)',
+  'linear-gradient(135deg, #6b6b6b 0%, #8a8a8a 50%, #a0a0a0 100%)',
+  'linear-gradient(135deg, #5a7a5a 0%, #7a9a78 50%, #8aaa88 100%)',
+  'linear-gradient(135deg, #8a7050 0%, #a08868 50%, #b8a080 100%)',
+  'linear-gradient(135deg, #4a5a4a 0%, #6a7a68 50%, #7a8a78 100%)',
+];
+
+/* ════════════════════════════════════════════════════════
+   HOME PAGE
+   ════════════════════════════════════════════════════════ */
+
 export default function Home() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [carouselIndex, setCarouselIndex] = useState(0);
-  const { addItem } = useCart();
-
-  useEffect(() => { document.title = 'Gruslevering.dk - Grus, sand og sten leveret til doeren'; }, []);
-
   useEffect(() => {
-    (async () => {
-      try {
-        const [prodRes, catRes] = await Promise.all([
-          fetch('/api/products'),
-          fetch('/api/categories'),
-        ]);
-        const prodData = await prodRes.json();
-        const catData = await catRes.json();
-        if (Array.isArray(prodData)) setProducts(prodData);
-        if (Array.isArray(catData)) setCategories(catData);
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    })();
+    document.title = 'Gruslevering.dk — Naturens bedste materialer, leveret til dig';
   }, []);
+
+  const { data: products = [], isLoading: loadingProducts } = useQuery<Product[]>({
+    queryKey: ['products'],
+    queryFn: () => fetch('/api/products').then((r) => r.json()),
+  });
+
+  const { data: categories = [], isLoading: loadingCategories } = useQuery<Category[]>({
+    queryKey: ['categories'],
+    queryFn: () => fetch('/api/categories').then((r) => r.json()),
+  });
 
   const parentCategories = categories
     .filter((c) => c.parentId === null)
@@ -59,136 +100,243 @@ export default function Home() {
     .slice(0, 6);
 
   const featuredProducts = products.slice(0, 8);
-
-  // Carousel: show 4 on desktop, 2 on tablet, 1 on mobile
-  const getVisibleCount = () => {
-    if (typeof window === 'undefined') return 4;
-    if (window.innerWidth >= 1024) return 4;
-    if (window.innerWidth >= 640) return 2;
-    return 1;
-  };
-
-  const maxIndex = Math.max(0, featuredProducts.length - getVisibleCount());
-
-  const categoryColors = [
-    'from-emerald-600 to-emerald-800',
-    'from-amber-600 to-amber-800',
-    'from-slate-600 to-slate-800',
-    'from-sky-600 to-sky-800',
-    'from-orange-600 to-orange-800',
-    'from-teal-600 to-teal-800',
-  ];
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--grus-bg)' }}>
       <Header />
 
-      {/* ═══ SECTION 1: HERO ═══ */}
-      <section className="relative overflow-hidden">
-        <div className="relative min-h-[85vh] flex items-center">
-          {/* Background gradient (no hero image yet) */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: 'linear-gradient(135deg, #1a1a2e 0%, #1a3a1a 30%, #2d7a2d 60%, #3f9b3f 100%)',
-            }}
-          />
-          {/* Subtle texture overlay */}
-          <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.15) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-          {/* Dark gradient overlay for bottom fade */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+      {/* ═══════════════════════════════════════════════════
+          SECTION 1 — HERO
+          ═══════════════════════════════════════════════════ */}
+      <section className="relative min-h-screen flex items-center overflow-hidden grain">
+        {/* Layered background */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(160deg, #1a1f1a 0%, #1a2e1a 40%, #2d4a2d 70%, #3d5a3a 100%)',
+          }}
+        />
+        {/* Radial glow */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(45,106,48,0.15) 0%, transparent 70%)',
+          }}
+        />
+        {/* Top vignette */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
 
-          <div className="relative z-10 max-w-[1260px] mx-auto px-5 sm:px-6 w-full pt-32 pb-24">
-            <Reveal>
-              <p className="text-white/60 text-[14px] font-medium tracking-[0.25em] uppercase mb-6">
-                Gruslevering.dk — Siden 2008
-              </p>
-            </Reveal>
-            <Reveal delay={100}>
-              <h1 className="text-white text-[40px] sm:text-[56px] lg:text-[72px] font-bold leading-[1.08] mb-6 max-w-3xl">
-                Grus, sand og sten
-                <br />
-                <span className="text-[#7dd87d]">— leveret til doeren</span>
-              </h1>
-            </Reveal>
-            <Reveal delay={200}>
-              <p className="text-white/70 text-[18px] sm:text-[20px] max-w-xl mb-10 leading-relaxed">
-                Bestil materialer i bigbags med fri levering i hele Danmark. Kvalitetsmaterialer til enhver opgave.
-              </p>
-            </Reveal>
-            <Reveal delay={300}>
-              <div className="flex flex-wrap gap-4">
-                <Link
-                  href="/shop"
-                  className="group inline-flex items-center gap-2.5 text-white text-[16px] font-semibold px-8 py-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
-                  style={{ backgroundColor: 'var(--grus-green)', }}
-                >
-                  Se produkter <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                </Link>
-                <Link
-                  href="/volumenberegner"
-                  className="inline-flex items-center gap-2.5 bg-white/[0.1] backdrop-blur-md text-white text-[16px] font-semibold px-8 py-4 rounded-lg border border-white/[0.2] hover:bg-white/[0.18] transition-all duration-300"
-                >
-                  <Calculator className="w-5 h-5" /> Beregn maengde
-                </Link>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ SECTION 2: USP BAR ═══ */}
-      <section style={{ backgroundColor: 'var(--grus-green)' }}>
-        <div className="max-w-[1260px] mx-auto px-5 sm:px-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/20">
-            {[
-              { icon: Truck, text: 'Fri levering i hele DK' },
-              { icon: Zap, text: 'Hurtig levering' },
-              { icon: Flag, text: 'Dansk virksomhed siden 2008' },
-              { icon: Star, text: '4.8/5 paa Trustpilot' },
-            ].map((usp, i) => (
-              <div key={i} className="flex items-center justify-center gap-3 py-5 px-4 text-white">
-                <usp.icon className="w-5 h-5 flex-shrink-0" />
-                <span className="text-[13px] sm:text-[14px] font-medium">{usp.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ SECTION 3: POPULAERE KATEGORIER ═══ */}
-      <section className="py-16 lg:py-24">
-        <div className="max-w-[1260px] mx-auto px-5 sm:px-6">
+        {/* Content */}
+        <div className="relative z-10 max-w-[1260px] mx-auto px-5 sm:px-6 w-full pt-40 pb-32 lg:pt-48 lg:pb-40">
+          {/* Label */}
           <Reveal>
-            <div className="text-center mb-12">
-              <h2 className="text-[32px] lg:text-[42px] font-bold text-[#1a1a2e] mb-3">Udforsk vores sortiment</h2>
-              <p className="text-gray-500 text-[17px] max-w-lg mx-auto">Find de rigtige materialer til dit projekt</p>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="editorial-divider" />
+              <span className="text-white/50 text-[11px] font-medium tracking-[0.3em] uppercase">
+                Siden 2008
+              </span>
             </div>
           </Reveal>
 
-          {loading ? (
-            <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
+          {/* Title */}
+          <Reveal delay={100}>
+            <h1 className="font-display font-bold tracking-tight text-white text-5xl sm:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] mb-6 max-w-4xl">
+              Naturens bedste
+              <br />
+              materialer
+            </h1>
+          </Reveal>
+
+          {/* Subtitle */}
+          <Reveal delay={200}>
+            <p className="font-display font-light text-white/50 text-2xl sm:text-3xl tracking-tight mb-6 max-w-2xl">
+              leveret direkte til dig
+            </p>
+          </Reveal>
+
+          {/* Description */}
+          <Reveal delay={300}>
+            <p className="text-white/35 text-lg max-w-lg mb-12 leading-relaxed">
+              Grus, sand, sten og havematerialer i bigbags med fri levering i hele Danmark.
+              Kvalitet du kan maerke.
+            </p>
+          </Reveal>
+
+          {/* CTAs */}
+          <Reveal delay={400}>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                href="/shop"
+                className="group inline-flex items-center gap-3 bg-white text-[var(--grus-dark)] text-base font-medium px-8 py-4 rounded-full hover:bg-white/90 transition-all duration-300"
+              >
+                Udforsk sortimentet
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+              </Link>
+              <Link
+                href="/volumenberegner"
+                className="inline-flex items-center gap-3 bg-transparent text-white text-base font-medium px-8 py-4 rounded-full border border-white/20 hover:border-white/40 hover:bg-white/5 transition-all duration-300"
+              >
+                <Calculator className="w-4 h-4" />
+                Beregn maengde
+              </Link>
+            </div>
+          </Reveal>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 animate-fade-in" style={{ animationDelay: '1.2s' }}>
+          <span className="text-white/25 text-[10px] tracking-[0.3em] uppercase">Scroll</span>
+          <ArrowDown className="w-4 h-4 text-white/25 animate-float" />
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════
+          SECTION 2 — TRUST BAR (Marquee)
+          ═══════════════════════════════════════════════════ */}
+      <section className="py-5 overflow-hidden" style={{ backgroundColor: 'var(--grus-warm)' }}>
+        <div className="animate-marquee flex whitespace-nowrap">
+          {[...Array(3)].map((_, rep) => (
+            <div key={rep} className="flex items-center shrink-0">
+              {[
+                'Fri levering',
+                '3\u20135 hverdages levering',
+                'Dansk kvalitet siden 2008',
+                '4.8\u2605 Trustpilot',
+              ].map((item, i) => (
+                <span key={i} className="flex items-center">
+                  <span className="text-[11px] font-medium tracking-[0.25em] uppercase text-[var(--grus-stone)] px-8">
+                    {item}
+                  </span>
+                  <span className="w-1 h-1 rounded-full bg-[var(--grus-stone)]/40" />
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════
+          SECTION 3 — CATEGORIES (Asymmetric Editorial Grid)
+          ═══════════════════════════════════════════════════ */}
+      <section className="py-24 lg:py-32">
+        <div className="max-w-[1260px] mx-auto px-5 sm:px-6">
+          {/* Section header */}
+          <Reveal>
+            <div className="mb-16">
+              <div className="flex items-center gap-4 mb-5">
+                <div className="editorial-divider" />
+                <span className="text-[var(--grus-stone)] text-[11px] font-medium tracking-[0.3em] uppercase">
+                  Sortiment
+                </span>
+              </div>
+              <h2 className="font-display font-bold tracking-tight text-[var(--grus-dark)] text-4xl lg:text-5xl xl:text-6xl max-w-xl">
+                Udforsk vores materialer
+              </h2>
+            </div>
+          </Reveal>
+
+          {loadingCategories ? (
+            <div className="grid grid-cols-2 gap-4 lg:gap-5">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className={`skeleton-shimmer rounded-2xl ${i < 2 ? 'aspect-[3/4]' : 'aspect-square'}`} />
+              ))}
+            </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-              {parentCategories.map((cat, i) => (
-                <Reveal key={cat.id} delay={i * 80}>
+            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-5 auto-rows-auto">
+              {/* First two: large, 3 cols each */}
+              {parentCategories.slice(0, 2).map((cat, i) => (
+                <Reveal key={cat.id} delay={i * 100} className="col-span-1 lg:col-span-3">
                   <Link
                     href={`/shop/${cat.slug}`}
-                    className="group relative aspect-[4/3] rounded-xl overflow-hidden block"
+                    className="group relative aspect-[3/4] rounded-2xl overflow-hidden block"
                   >
                     {cat.image ? (
                       <SmartImage
                         src={cat.image}
                         alt={cat.name}
-                        className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
+                        className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700 ease-out"
                       />
                     ) : (
-                      <div className={`w-full h-full bg-gradient-to-br ${categoryColors[i % categoryColors.length]}`} />
+                      <div
+                        className="w-full h-full"
+                        style={{ background: categoryGradients[i] }}
+                      />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent group-hover:from-black/80 transition-all duration-500" />
-                    <div className="absolute bottom-0 left-0 right-0 p-5">
-                      <p className="text-white/50 text-[12px] font-medium tracking-[0.15em] uppercase mb-1">{cat.count} produkter</p>
-                      <p className="text-white font-bold text-[20px] lg:text-[22px] leading-tight">{cat.name}</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent group-hover:from-black/80 transition-all duration-500" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8">
+                      <p className="text-white/40 text-[11px] font-medium tracking-[0.2em] uppercase mb-2">
+                        {cat.count} produkter
+                      </p>
+                      <p className="font-display font-bold text-white text-2xl lg:text-3xl tracking-tight">
+                        {cat.name}
+                      </p>
+                    </div>
+                  </Link>
+                </Reveal>
+              ))}
+
+              {/* Next three: smaller, 2 cols each */}
+              {parentCategories.slice(2, 5).map((cat, i) => (
+                <Reveal key={cat.id} delay={(i + 2) * 100} className="col-span-1 lg:col-span-2">
+                  <Link
+                    href={`/shop/${cat.slug}`}
+                    className="group relative aspect-square rounded-2xl overflow-hidden block"
+                  >
+                    {cat.image ? (
+                      <SmartImage
+                        src={cat.image}
+                        alt={cat.name}
+                        className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700 ease-out"
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full"
+                        style={{ background: categoryGradients[i + 2] }}
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent group-hover:from-black/80 transition-all duration-500" />
+                    <div className="absolute bottom-0 left-0 right-0 p-5 lg:p-6">
+                      <p className="text-white/40 text-[10px] font-medium tracking-[0.2em] uppercase mb-1.5">
+                        {cat.count} produkter
+                      </p>
+                      <p className="font-display font-bold text-white text-xl lg:text-2xl tracking-tight">
+                        {cat.name}
+                      </p>
+                    </div>
+                  </Link>
+                </Reveal>
+              ))}
+
+              {/* Last one: full-width banner */}
+              {parentCategories.slice(5, 6).map((cat, i) => (
+                <Reveal key={cat.id} delay={500} className="col-span-2 lg:col-span-6">
+                  <Link
+                    href={`/shop/${cat.slug}`}
+                    className="group relative aspect-[2/1] lg:aspect-[3/1] rounded-2xl overflow-hidden block"
+                  >
+                    {cat.image ? (
+                      <SmartImage
+                        src={cat.image}
+                        alt={cat.name}
+                        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full"
+                        style={{ background: categoryGradients[5] }}
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent group-hover:from-black/70 transition-all duration-500" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-10">
+                      <p className="text-white/40 text-[11px] font-medium tracking-[0.2em] uppercase mb-2">
+                        {cat.count} produkter
+                      </p>
+                      <p className="font-display font-bold text-white text-2xl lg:text-4xl tracking-tight">
+                        {cat.name}
+                      </p>
                     </div>
                   </Link>
                 </Reveal>
@@ -198,150 +346,176 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══ SECTION 4: UDVALGTE PRODUKTER (Carousel) ═══ */}
-      <section className="py-16 lg:py-24 bg-[#f7f7f5]">
+      {/* ═══════════════════════════════════════════════════
+          SECTION 4 — FEATURED PRODUCTS (Horizontal snap scroll)
+          ═══════════════════════════════════════════════════ */}
+      <section className="py-24 lg:py-32" style={{ backgroundColor: 'var(--grus-sand)' }}>
         <div className="max-w-[1260px] mx-auto px-5 sm:px-6">
+          {/* Section header */}
           <Reveal>
-            <div className="flex items-end justify-between mb-10">
+            <div className="flex items-end justify-between mb-12">
               <div>
-                <p className="text-[13px] font-semibold tracking-[0.2em] uppercase mb-2" style={{ color: 'var(--grus-green)' }}>Udvalgte</p>
-                <h2 className="text-[32px] lg:text-[42px] font-bold text-[#1a1a2e]">Populaere produkter</h2>
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="editorial-divider" />
+                  <span className="text-[var(--grus-stone)] text-[11px] font-medium tracking-[0.3em] uppercase">
+                    Udvalgte
+                  </span>
+                </div>
+                <h2 className="font-display font-bold tracking-tight text-[var(--grus-dark)] text-4xl lg:text-5xl">
+                  Populaere produkter
+                </h2>
               </div>
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  onClick={() => setCarouselIndex((prev) => Math.max(0, prev - 1))}
-                  disabled={carouselIndex === 0}
-                  className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-white disabled:opacity-30 transition-all"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setCarouselIndex((prev) => Math.min(maxIndex, prev + 1))}
-                  disabled={carouselIndex >= maxIndex}
-                  className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-white disabled:opacity-30 transition-all"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
+              <Link
+                href="/shop"
+                className="hidden sm:inline-flex items-center gap-2 text-sm font-medium text-[var(--grus-dark)] hover:text-[var(--grus-green)] transition-colors"
+              >
+                Se alle produkter
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </Reveal>
 
-          {loading ? (
-            <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
+          {loadingProducts ? (
+            <div className="flex gap-5 overflow-hidden">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-72 h-96 skeleton-shimmer rounded-2xl" />
+              ))}
+            </div>
           ) : (
-            <>
-              <div className="overflow-hidden">
-                <div
-                  className="flex gap-5 transition-transform duration-500 ease-out"
-                  style={{ transform: `translateX(-${carouselIndex * (100 / getVisibleCount() + 1.25)}%)` }}
-                >
-                  {featuredProducts.map((p, i) => (
-                    <div
-                      key={p.id}
-                      className="flex-shrink-0"
-                      style={{ width: `calc(${100 / getVisibleCount()}% - ${(getVisibleCount() - 1) * 20 / getVisibleCount()}px)` }}
-                    >
-                      <Reveal delay={i * 60}>
-                        <Card className="group overflow-hidden border-gray-100 hover:shadow-lg transition-all duration-300">
-                          <Link href={`/produkt/${p.id}`}>
-                            <div className="aspect-[4/3] relative overflow-hidden bg-gray-100">
-                              {p.image ? (
-                                <SmartImage src={p.image} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                              ) : <div className="w-full h-full bg-gray-100" />}
-                              <span
-                                className="absolute top-3 left-3 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                                style={{ backgroundColor: 'var(--grus-green)' }}
-                              >
-                                {p.category}
-                              </span>
-                            </div>
-                          </Link>
-                          <CardContent className="p-4">
-                            <Link href={`/produkt/${p.id}`}>
-                              <h3 className="text-[15px] font-semibold text-[#1a1a2e] leading-snug mb-3 line-clamp-2 hover:opacity-70 transition-opacity">{p.title}</h3>
-                            </Link>
-                            <div className="flex items-end justify-between pt-3 border-t border-gray-100">
-                              <div>
-                                <p className="text-[17px] font-bold text-[#1a1a2e] tracking-tight">
-                                  {p.variants && p.variants.length > 0 ? 'Fra ' : ''}{formatPrice(p.salePrice ?? p.basePrice)}
-                                </p>
-                                <p className="text-[11px] text-gray-400 mt-0.5">inkl. levering</p>
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  addItem({
-                                    id: String(p.id),
-                                    title: p.title,
-                                    price: p.salePrice ?? p.basePrice,
-                                    image: p.image,
-                                    sku: p.sku,
-                                  });
-                                }}
-                                className="inline-flex items-center gap-1.5 text-white text-[13px] font-semibold px-4 py-2 rounded-lg transition-all duration-200"
-                                style={{ backgroundColor: 'var(--grus-green)' }}
-                              >
-                                <ShoppingCart className="w-3.5 h-3.5" /> Koeb
-                              </button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Reveal>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Reveal delay={200}>
-                <div className="text-center mt-10">
+            <div
+              ref={scrollRef}
+              className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-thin -mx-5 px-5 sm:-mx-6 sm:px-6"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              {featuredProducts.map((p, i) => (
+                <Reveal key={p.id} delay={i * 60} className={`flex-shrink-0 snap-start ${i === 0 ? 'w-[320px] sm:w-[360px]' : 'w-[260px] sm:w-[290px]'}`}>
                   <Link
-                    href="/shop"
-                    className="inline-flex items-center gap-2 text-[15px] font-semibold transition-colors"
-                    style={{ color: 'var(--grus-green)' }}
+                    href={`/produkt/${p.slug || p.id}`}
+                    className="group block bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 hover:-translate-y-1 h-full"
                   >
-                    Se alle produkter <ArrowRight className="w-4 h-4" />
+                    {/* Image */}
+                    <div
+                      className={`relative overflow-hidden ${i === 0 ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}
+                      style={{ backgroundColor: '#f0ede8' }}
+                    >
+                      {p.image ? (
+                        <SmartImage
+                          src={p.image}
+                          alt={p.title}
+                          className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700 ease-out"
+                        />
+                      ) : (
+                        <div className="w-full h-full" style={{ backgroundColor: '#f0ede8' }} />
+                      )}
+                      {/* Category badge */}
+                      <span className="absolute top-4 left-4 text-[10px] font-medium tracking-[0.15em] uppercase px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-sm text-[var(--grus-dark)]">
+                        {p.category}
+                      </span>
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-5">
+                      <h3 className="font-display font-semibold text-[var(--grus-dark)] text-base leading-snug mb-3 line-clamp-2 group-hover:text-[var(--grus-green)] transition-colors">
+                        {p.title}
+                      </h3>
+                      <p className="text-[var(--grus-dark)] text-lg font-bold tracking-tight">
+                        {p.variants && p.variants.length > 0 ? 'Fra ' : ''}
+                        {formatPrice(p.salePrice ?? p.basePrice)}
+                      </p>
+                      {p.deliveryIncluded && (
+                        <p className="text-[var(--grus-stone)] text-xs mt-1">inkl. levering</p>
+                      )}
+                    </div>
                   </Link>
-                </div>
-              </Reveal>
-            </>
+                </Reveal>
+              ))}
+
+              {/* "See all" card at end */}
+              <div className="flex-shrink-0 snap-start w-[200px] flex items-center justify-center">
+                <Link
+                  href="/shop"
+                  className="group flex flex-col items-center gap-3 text-[var(--grus-dark)] hover:text-[var(--grus-green)] transition-colors"
+                >
+                  <div className="w-14 h-14 rounded-full border-2 border-current flex items-center justify-center group-hover:bg-[var(--grus-green)] group-hover:border-[var(--grus-green)] group-hover:text-white transition-all duration-300">
+                    <ChevronRight className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-medium whitespace-nowrap">Se alle</span>
+                </Link>
+              </div>
+            </div>
           )}
+
+          {/* Mobile "see all" link */}
+          <Reveal delay={200}>
+            <div className="text-center mt-8 sm:hidden">
+              <Link
+                href="/shop"
+                className="inline-flex items-center gap-2 text-sm font-medium text-[var(--grus-dark)] hover:text-[var(--grus-green)] transition-colors"
+              >
+                Se alle produkter
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ═══ SECTION 5: VOLUMENBEREGNER CTA ═══ */}
+      {/* ═══════════════════════════════════════════════════
+          SECTION 5 — VOLUME CALCULATOR CTA
+          ═══════════════════════════════════════════════════ */}
       <section
-        className="py-16 lg:py-24 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, var(--grus-green) 0%, #1a5a1a 100%)' }}
+        className="relative py-24 lg:py-32 overflow-hidden grain"
+        style={{ backgroundColor: 'var(--grus-dark)' }}
       >
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
         <div className="max-w-[1260px] mx-auto px-5 sm:px-6 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-10 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left: text */}
             <Reveal>
               <div>
-                <div className="w-16 h-16 rounded-2xl bg-white/15 flex items-center justify-center mb-6">
-                  <Calculator className="w-8 h-8 text-white" />
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="editorial-divider" />
+                  <span className="text-white/30 text-[11px] font-medium tracking-[0.3em] uppercase">
+                    Vaerktoej
+                  </span>
                 </div>
-                <h2 className="text-[32px] lg:text-[42px] font-bold text-white mb-4 leading-tight">
-                  Hvor meget skal du bruge?
+                <h2 className="font-display font-bold tracking-tight text-white text-4xl lg:text-5xl xl:text-6xl leading-[1.05] mb-6">
+                  Hvor meget har
+                  <br />
+                  du brug for?
                 </h2>
-                <p className="text-white/80 text-[17px] leading-relaxed mb-8 max-w-lg">
-                  Brug vores volumenberegner til at finde ud af praecis hvor mange bigbags du skal bestille. Indtast maal og faa et praecist estimat med det samme.
+                <p className="text-white/40 text-lg leading-relaxed mb-10 max-w-md">
+                  Brug vores volumenberegner til at finde ud af praecis hvor mange bigbags du
+                  skal bestille. Indtast dine maal og faa svar med det samme.
                 </p>
                 <Link
                   href="/volumenberegner"
-                  className="group inline-flex items-center gap-2.5 bg-white text-[16px] font-semibold px-8 py-4 rounded-lg hover:bg-gray-50 transition-all duration-300 shadow-lg"
-                  style={{ color: 'var(--grus-green)' }}
+                  className="group inline-flex items-center gap-3 bg-white text-[var(--grus-dark)] text-base font-medium px-8 py-4 rounded-full hover:bg-white/90 transition-all duration-300"
                 >
-                  Proev beregneren <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  Proev beregneren
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                 </Link>
               </div>
             </Reveal>
+
+            {/* Right: large typographic display */}
             <Reveal delay={150}>
               <div className="hidden lg:flex items-center justify-center">
-                <div className="w-64 h-64 rounded-full bg-white/10 flex items-center justify-center">
-                  <div className="w-48 h-48 rounded-full bg-white/10 flex items-center justify-center">
-                    <Calculator className="w-20 h-20 text-white/60" />
-                  </div>
+                <div className="relative">
+                  {/* Giant abstract number */}
+                  <span
+                    className="font-display font-bold text-[200px] xl:text-[260px] leading-none tracking-tighter select-none"
+                    style={{ color: 'rgba(255,255,255,0.04)' }}
+                  >
+                    m&sup3;
+                  </span>
+                  {/* Accent ring */}
+                  <div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border border-white/10"
+                  />
+                  <div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full"
+                    style={{ backgroundColor: 'var(--grus-green)', opacity: 0.15 }}
+                  />
                 </div>
               </div>
             </Reveal>
@@ -349,68 +523,97 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══ SECTION 6: HVORFOR VAELGE OS ═══ */}
-      <section className="py-16 lg:py-24">
+      {/* ═══════════════════════════════════════════════════
+          SECTION 6 — VALUES / TRUST
+          ═══════════════════════════════════════════════════ */}
+      <section className="py-24 lg:py-32" style={{ backgroundColor: 'var(--grus-bg)' }}>
         <div className="max-w-[1260px] mx-auto px-5 sm:px-6">
           <Reveal>
-            <div className="text-center mb-14">
-              <h2 className="text-[32px] lg:text-[42px] font-bold text-[#1a1a2e] mb-3">Hvorfor vaelge os</h2>
-              <p className="text-gray-500 text-[17px] max-w-lg mx-auto">Vi goer det nemt at faa de materialer du har brug for</p>
+            <div className="text-center mb-16">
+              <h2 className="font-display font-bold tracking-tight text-[var(--grus-dark)] text-4xl lg:text-5xl mb-4">
+                Hvorfor vaelge os
+              </h2>
+              <p className="text-[var(--grus-stone)] text-lg max-w-md mx-auto">
+                Vi goer det nemt at faa de materialer du har brug for
+              </p>
             </div>
           </Reveal>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
             {[
               {
                 icon: Shield,
-                title: 'Kvalitetsmaterialer',
-                description: 'Alle vores materialer er noeje udvalgt og leveres i praktiske bigbags, klar til brug.',
+                title: 'Kvalitet',
+                description:
+                  'Alle vores materialer er noeje udvalgt fra danske leverandoerer. Leveres i praktiske bigbags, klar til brug.',
               },
               {
-                icon: MapPin,
-                title: 'Levering til hele DK',
-                description: 'Vi leverer frit til alle faste danske oeer. Bestil i dag og faa levering inden for faa dage.',
+                icon: Truck,
+                title: 'Levering',
+                description:
+                  'Fri levering til alle faste danske oeer. Bestil i dag og faa dine materialer leveret inden for faa hverdage.',
               },
               {
-                icon: Phone,
-                title: 'Personlig service',
-                description: 'Ring til os for raadgivning om materialevalg og maengder. Vi hjaelper dig gerne.',
+                icon: Headphones,
+                title: 'Service',
+                description:
+                  'Ring til os for personlig raadgivning om materialevalg og maengder. Vi er altid klar til at hjaelpe.',
               },
             ].map((feature, i) => (
-              <Reveal key={feature.title} delay={i * 100}>
-                <Card className="text-center p-8 border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              <Reveal key={feature.title} delay={i * 120}>
+                <div className="text-center lg:text-left">
+                  {/* Icon */}
                   <div
-                    className="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center"
-                    style={{ backgroundColor: 'var(--grus-green-light)' }}
+                    className="w-14 h-14 rounded-2xl mx-auto lg:mx-0 mb-6 flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--grus-green)', opacity: 0.9 }}
                   >
-                    <feature.icon className="w-7 h-7" style={{ color: 'var(--grus-green)' }} />
+                    <feature.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-[20px] font-bold text-[#1a1a2e] mb-3">{feature.title}</h3>
-                  <p className="text-gray-500 text-[15px] leading-relaxed">{feature.description}</p>
-                </Card>
+                  <h3 className="font-display font-bold text-[var(--grus-dark)] text-xl tracking-tight mb-3">
+                    {feature.title}
+                  </h3>
+                  <p className="text-[var(--grus-stone)] text-[15px] leading-relaxed max-w-sm mx-auto lg:mx-0">
+                    {feature.description}
+                  </p>
+                </div>
               </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ SECTION 7: CTA ═══ */}
-      <section className="py-16 lg:py-24 bg-[#1a1a2e] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+      {/* ═══════════════════════════════════════════════════
+          SECTION 7 — CLOSING CTA
+          ═══════════════════════════════════════════════════ */}
+      <section
+        className="relative py-24 lg:py-32 overflow-hidden"
+        style={{
+          background: 'linear-gradient(160deg, #2d6a30 0%, #1a4a1e 60%, #1a2e1a 100%)',
+        }}
+      >
+        {/* Grain */}
+        <div className="absolute inset-0 grain" />
+
         <div className="max-w-[1260px] mx-auto px-5 sm:px-6 text-center relative z-10">
           <Reveal>
-            <h2 className="text-[34px] lg:text-[48px] font-bold text-white mb-5 leading-tight">
-              Klar til at bestille?
+            <h2 className="font-display font-bold tracking-tight text-white text-4xl sm:text-5xl lg:text-6xl xl:text-7xl leading-[1] mb-6 max-w-3xl mx-auto">
+              Klar til dit
+              <br />
+              naeste projekt?
             </h2>
-            <p className="text-white/50 text-[17px] max-w-md mx-auto mb-10 leading-relaxed">
+          </Reveal>
+          <Reveal delay={100}>
+            <p className="text-white/40 text-lg max-w-md mx-auto mb-10 leading-relaxed">
               Udforsk vores sortiment og bestil materialer med fri levering til hele Danmark
             </p>
+          </Reveal>
+          <Reveal delay={200}>
             <Link
               href="/shop"
-              className="group inline-flex items-center gap-2.5 text-white text-[16px] font-semibold px-10 py-4.5 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
-              style={{ backgroundColor: 'var(--grus-green)' }}
+              className="group inline-flex items-center gap-3 bg-white text-[var(--grus-dark)] text-base font-medium px-10 py-4 rounded-full hover:bg-white/90 transition-all duration-300"
             >
-              Se vores produkter <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+              Se vores produkter
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
             </Link>
           </Reveal>
         </div>
