@@ -1,40 +1,12 @@
 import { Link } from 'wouter';
 import {
-  Truck,
-  Timer,
-  ShieldCheck,
-  Headphones,
   Phone,
   Mail,
   MapPin,
   Clock,
   Facebook,
   Instagram,
-  Star,
 } from 'lucide-react';
-
-const usps = [
-  {
-    icon: Truck,
-    title: 'Fri levering',
-    description: 'Ved ordre over 2.000 kr.',
-  },
-  {
-    icon: Timer,
-    title: 'Hurtig levering',
-    description: 'Levering inden for 1-3 hverdage',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Dansk kvalitet',
-    description: 'Materialer fra danske leverandører',
-  },
-  {
-    icon: Headphones,
-    title: 'Kundeservice',
-    description: 'Vi er klar til at hjælpe dig',
-  },
-];
 
 const kundeserviceLinks = [
   { label: 'FAQ', href: '/kontakt' },
@@ -46,36 +18,19 @@ const kundeserviceLinks = [
 const informationLinks = [
   { label: 'Om os', href: '/om-os' },
   { label: 'Volumenberegner', href: '/volumenberegner' },
-  { label: 'Vores materialer', href: '/shop' },
+  { label: 'Alle produkter', href: '/shop' },
+  { label: 'Levering', href: '/levering' },
 ];
 
 export default function Footer() {
   return (
-    <footer
-      className="text-white"
-      style={{ backgroundColor: 'var(--grus-dark)' }}
-    >
-      {/* USP bar */}
-      <div className="bg-white/5">
-        <div className="max-w-[1280px] mx-auto px-5 sm:px-6 py-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {usps.map((usp) => (
-              <div key={usp.title} className="flex flex-col items-center text-center gap-2">
-                <usp.icon className="w-6 h-6 text-[var(--grus-green)]" />
-                <span className="text-sm font-semibold text-white">{usp.title}</span>
-                <span className="text-sm text-gray-400">{usp.description}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main footer */}
-      <div className="max-w-[1280px] mx-auto px-5 sm:px-6 pt-12 pb-8">
+    <footer style={{ backgroundColor: 'var(--grus-dark)' }}>
+      {/* Main footer content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-8 mb-12">
           {/* Kundeservice */}
           <div>
-            <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
+            <h4 className="text-sm uppercase tracking-wide font-semibold text-white mb-4">
               Kundeservice
             </h4>
             <ul className="space-y-2.5">
@@ -94,7 +49,7 @@ export default function Footer() {
 
           {/* Information */}
           <div>
-            <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
+            <h4 className="text-sm uppercase tracking-wide font-semibold text-white mb-4">
               Information
             </h4>
             <ul className="space-y-2.5">
@@ -113,7 +68,7 @@ export default function Footer() {
 
           {/* Kontakt */}
           <div>
-            <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
+            <h4 className="text-sm uppercase tracking-wide font-semibold text-white mb-4">
               Kontakt
             </h4>
             <ul className="space-y-2.5 text-sm text-gray-400">
@@ -149,7 +104,7 @@ export default function Footer() {
 
           {/* Folg os */}
           <div>
-            <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
+            <h4 className="text-sm uppercase tracking-wide font-semibold text-white mb-4">
               Folg os
             </h4>
             <div className="flex items-center gap-3 mb-6">
@@ -172,23 +127,22 @@ export default function Footer() {
                 <Instagram className="w-4 h-4 text-gray-300" />
               </a>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Star className="w-4 h-4 text-[#00b67a] fill-[#00b67a]" />
-              <span>Trustpilot</span>
-            </div>
-            <p className="text-xs text-[var(--grus-stone)] mt-1">Se anmeldelser</p>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Gruslevering.dk er en del af Kaervang Materialer ApS.
+              Vi leverer grus, sand, sten og havematerialer i hele Danmark.
+            </p>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-[var(--grus-stone)]">
-            &copy; 2025 Kaervang Materialer ApS &middot; CVR 40125391
+          <p className="text-xs text-gray-500">
+            &copy; {new Date().getFullYear()} Kaervang Materialer ApS &middot; CVR 40125391
           </p>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--grus-stone)] bg-white/5 px-2.5 py-1 rounded">Visa</span>
-            <span className="text-xs text-[var(--grus-stone)] bg-white/5 px-2.5 py-1 rounded">MasterCard</span>
-            <span className="text-xs text-[var(--grus-stone)] bg-white/5 px-2.5 py-1 rounded">MobilePay</span>
+            <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded">Visa</span>
+            <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded">MasterCard</span>
+            <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded">MobilePay</span>
           </div>
         </div>
       </div>

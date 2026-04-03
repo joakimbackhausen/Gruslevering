@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SmartImage from '@/components/SmartImage';
 import { useCart } from '@/contexts/CartContext';
 import type { Product, Category } from '@/types/product';
 
@@ -28,9 +29,9 @@ const formatPrice = (price: number) =>
 type SortOption = 'popular' | 'price-asc' | 'price-desc' | 'name';
 
 const sortLabels: Record<SortOption, string> = {
-  popular: 'Populære',
-  'price-asc': 'Pris lav-høj',
-  'price-desc': 'Pris høj-lav',
+  popular: 'Populaere',
+  'price-asc': 'Pris lav-hoj',
+  'price-desc': 'Pris hoj-lav',
   name: 'Navn A-Z',
 };
 
@@ -66,21 +67,21 @@ function matchesPriceRange(price: number, range: PriceRange): boolean {
 function SkeletonCard() {
   return (
     <div className="bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden">
-      <div className="aspect-[3/4] bg-[var(--grus-sand)] animate-pulse" />
+      <div className="aspect-square bg-[var(--grus-sand)] animate-pulse" />
       <div className="p-4 space-y-2">
-        <div className="h-3 w-16 rounded bg-[var(--grus-sand)] animate-pulse" />
-        <div className="h-4 w-3/4 rounded bg-[var(--grus-sand)] animate-pulse" />
-        <div className="h-4 w-1/3 rounded bg-[var(--grus-sand)] animate-pulse" />
+        <div className="h-3 w-16 rounded bg-gray-100 animate-pulse" />
+        <div className="h-4 w-3/4 rounded bg-gray-100 animate-pulse" />
+        <div className="h-4 w-1/3 rounded bg-gray-100 animate-pulse" />
       </div>
       <div className="px-4 pb-4">
-        <div className="h-10 rounded-lg bg-[var(--grus-sand)] animate-pulse" />
+        <div className="h-10 rounded-lg bg-gray-100 animate-pulse" />
       </div>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Product Card                                                      */
+/*  Product Card (consistent with Home)                               */
 /* ------------------------------------------------------------------ */
 
 function ProductCard({ product }: { product: Product }) {
@@ -114,12 +115,11 @@ function ProductCard({ product }: { product: Product }) {
       className="group block bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden transition-all duration-200 hover:shadow-md"
     >
       {/* Image */}
-      <div className="relative aspect-[3/4] bg-[var(--grus-sand)] p-3">
+      <div className="relative aspect-square bg-[var(--grus-sand)] p-4">
         {product.image ? (
-          <img
+          <SmartImage
             src={product.image}
             alt={product.title}
-            loading="lazy"
             className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
@@ -136,26 +136,27 @@ function ProductCard({ product }: { product: Product }) {
 
       {/* Content */}
       <div className="p-4">
-        <span className="text-xs font-medium uppercase tracking-wider text-[var(--grus-green)]">
+        <span className="text-xs font-semibold uppercase tracking-wide text-[var(--grus-green)]">
           {product.category}
         </span>
-        <h3 className="text-sm font-semibold text-[var(--grus-dark)] mt-1.5 line-clamp-2 leading-snug">
+        <h3 className="text-sm font-medium text-[var(--grus-dark)] mt-1 line-clamp-2 leading-snug min-h-[2.5rem]">
           {product.title}
         </h3>
-        <div className="mt-3 flex items-baseline gap-2">
+        <div className="mt-2 flex items-baseline gap-2">
           {isOnSale ? (
             <>
-              <span className="text-sm text-[var(--grus-stone)] line-through">
-                {formatPrice(product.basePrice)}
-              </span>
               <span className="text-base font-bold text-[var(--grus-accent)]">
+                {hasVariants ? 'Fra ' : ''}
                 {formatPrice(product.salePrice!)}
+              </span>
+              <span className="text-sm text-gray-400 line-through">
+                {formatPrice(product.basePrice)}
               </span>
             </>
           ) : (
             <span className="text-base font-bold text-[var(--grus-dark)]">
               {hasVariants && (
-                <span className="text-sm font-normal text-[var(--grus-stone)]">
+                <span className="text-sm font-normal text-gray-500">
                   Fra{' '}
                 </span>
               )}
@@ -164,7 +165,7 @@ function ProductCard({ product }: { product: Product }) {
           )}
         </div>
         {product.deliveryIncluded && (
-          <p className="text-xs text-[var(--grus-stone)] mt-1">
+          <p className="text-xs text-gray-400 mt-0.5">
             inkl. levering
           </p>
         )}
@@ -181,7 +182,7 @@ function ProductCard({ product }: { product: Product }) {
             onClick={handleAddToCart}
             className="w-full bg-[var(--grus-green)] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--grus-green-hover)] transition-colors cursor-pointer"
           >
-            Læg i kurv
+            Laeg i kurv
           </button>
         )}
       </div>
@@ -214,7 +215,7 @@ function FilterSection({
           {title}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-[var(--grus-stone)] transition-transform duration-200 ${
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
             open ? 'rotate-180' : ''
           }`}
         />
@@ -278,7 +279,7 @@ function SidebarFilters({
               <span className={selectedCategory ? 'ml-3.5' : ''}>
                 Alle produkter
               </span>
-              <span className="ml-auto text-xs text-[var(--grus-stone)]">
+              <span className="ml-auto text-xs text-gray-400">
                 ({products.length})
               </span>
             </button>
@@ -299,7 +300,7 @@ function SidebarFilters({
                 <span className={selectedCategory !== c.slug ? 'ml-3.5' : ''}>
                   {c.name}
                 </span>
-                <span className="ml-auto text-xs text-[var(--grus-stone)]">
+                <span className="ml-auto text-xs text-gray-400">
                   ({categoryCounts[c.slug] || 0})
                 </span>
               </button>
@@ -331,29 +332,11 @@ function SidebarFilters({
         </ul>
       </FilterSection>
 
-      {/* Leveringsmetode */}
-      <FilterSection title="Leveringsmetode" defaultOpen={false}>
-        <ul className="space-y-1">
-          {['Bigbag-levering', 'Afhentning'].map((method) => (
-            <li key={method}>
-              <label className="flex items-center gap-2.5 text-sm py-1.5 px-2 rounded-lg cursor-pointer hover:bg-[var(--grus-green-light)]/50 transition-colors">
-                <input
-                  type="checkbox"
-                  disabled
-                  className="w-4 h-4 rounded border-[var(--grus-border)] text-[var(--grus-green)] accent-[var(--grus-green)]"
-                />
-                <span className="text-[var(--grus-dark)]">{method}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
-      </FilterSection>
-
       {/* Reset */}
       {hasActiveFilters && (
         <button
           onClick={onReset}
-          className="text-sm text-[var(--grus-stone)] underline hover:text-[var(--grus-dark)] transition-colors mt-4"
+          className="text-sm text-gray-500 underline hover:text-[var(--grus-dark)] transition-colors mt-4"
         >
           Nulstil filtre
         </button>
@@ -375,7 +358,6 @@ function MobileFilterDrawer({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  // Lock body scroll when open
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -398,7 +380,7 @@ function MobileFilterDrawer({
       />
       {/* Drawer */}
       <div
-        className={`fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-[var(--grus-bg)] z-50 transform transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-white z-50 transform transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -406,7 +388,7 @@ function MobileFilterDrawer({
           <h2 className="font-semibold text-[var(--grus-dark)]">Filtre</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[var(--grus-sand)] transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5 text-[var(--grus-dark)]" />
           </button>
@@ -545,17 +527,14 @@ export default function Shop() {
   );
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: 'var(--grus-bg)' }}
-    >
+    <div className="min-h-screen flex flex-col bg-white">
       <Header />
 
       <main className="flex-1" style={{ paddingTop: 'var(--header-h, 124px)' }}>
         {/* Page header area */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
           {/* Breadcrumbs */}
-          <nav className="flex items-center gap-1 text-sm text-[var(--grus-stone)] mb-4">
+          <nav className="flex items-center gap-1 text-sm text-gray-500 mb-4">
             <Link
               href="/"
               className="hover:text-[var(--grus-dark)] transition-colors"
@@ -584,17 +563,11 @@ export default function Shop() {
           </nav>
 
           {/* Page title */}
-          <h1
-            className="text-2xl lg:text-3xl font-bold"
-            style={{
-              color: 'var(--grus-dark)',
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-            }}
-          >
+          <h1 className="font-display text-2xl lg:text-3xl font-bold text-[var(--grus-dark)]">
             {selectedCatObj ? selectedCatObj.name : 'Alle produkter'}
           </h1>
           {selectedCatObj?.description && (
-            <p className="mt-2 text-sm text-[var(--grus-stone)] max-w-2xl">
+            <p className="mt-2 text-sm text-gray-500 max-w-2xl">
               {selectedCatObj.description}
             </p>
           )}
@@ -620,23 +593,22 @@ export default function Shop() {
 
             {/* RIGHT - product grid area */}
             <div className="flex-1 min-w-0">
-              {/* Top bar: mobile filter button + search + sort + count */}
+              {/* Top bar */}
               <div className="space-y-3 mb-6">
                 {/* Search input */}
                 <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--grus-stone)]" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Søg produkter..."
+                    placeholder="Sog produkter..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full text-sm border border-[var(--grus-border)] rounded-lg pl-10 pr-9 py-2.5 bg-white focus:border-[var(--grus-green)] focus:ring-1 focus:ring-[var(--grus-green)] focus:outline-none transition-colors"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    className="w-full text-sm border border-[var(--grus-border)] rounded-lg pl-10 pr-9 py-2.5 bg-white focus:border-[var(--grus-green)] focus:ring-1 focus:ring-[var(--grus-green)] focus:outline-none transition-colors font-sans"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--grus-stone)] hover:text-[var(--grus-dark)]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[var(--grus-dark)]"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -662,7 +634,7 @@ export default function Shop() {
 
                     {/* Product count */}
                     {!productsLoading && (
-                      <p className="text-sm text-[var(--grus-stone)]">
+                      <p className="text-sm text-gray-500">
                         Viser {filtered.length} produkt
                         {filtered.length !== 1 ? 'er' : ''}
                       </p>
@@ -675,14 +647,14 @@ export default function Shop() {
                       onClick={() => setShowSortDrop(!showSortDrop)}
                       className="flex items-center gap-1.5 text-sm border border-[var(--grus-border)] rounded-lg px-3 py-2 bg-white hover:bg-[var(--grus-green-light)] transition-colors"
                     >
-                      <span className="text-[var(--grus-stone)] hidden sm:inline">
+                      <span className="text-gray-500 hidden sm:inline">
                         Sorter:
                       </span>
                       <span className="text-[var(--grus-dark)] font-medium">
                         {sortLabels[sortBy]}
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 text-[var(--grus-stone)] transition-transform ${
+                        className={`w-4 h-4 text-gray-400 transition-transform ${
                           showSortDrop ? 'rotate-180' : ''
                         }`}
                       />
@@ -701,7 +673,7 @@ export default function Shop() {
                             className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                               sortBy === key
                                 ? 'bg-[var(--grus-green-light)] font-medium text-[var(--grus-green)]'
-                                : 'text-[var(--grus-dark)] hover:bg-[var(--grus-green-light)]/50'
+                                : 'text-[var(--grus-dark)] hover:bg-gray-50'
                             }`}
                           >
                             {label}
@@ -722,12 +694,12 @@ export default function Shop() {
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <PackageSearch className="w-12 h-12 text-[var(--grus-stone)] opacity-40 mb-4" />
+                  <PackageSearch className="w-12 h-12 text-gray-300 mb-4" />
                   <h3 className="text-lg font-semibold text-[var(--grus-dark)] mb-2">
                     Ingen produkter fundet
                   </h3>
-                  <p className="text-sm text-[var(--grus-stone)] mb-6 max-w-xs">
-                    Prøv at justere dine filtre eller søg efter noget andet.
+                  <p className="text-sm text-gray-500 mb-6 max-w-xs">
+                    Prov at justere dine filtre eller sog efter noget andet.
                   </p>
                   <button
                     onClick={clearFilters}

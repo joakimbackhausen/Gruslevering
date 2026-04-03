@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SmartImage from '@/components/SmartImage';
 import { useCart } from '@/contexts/CartContext';
 import type { Product, TieredPrice } from '@/types/product';
 
@@ -31,6 +32,7 @@ function formatPriceDecimal(price: number): string {
   });
 }
 
+/* Related product card (consistent style) */
 function ProductCard({ product }: { product: Product }) {
   const productUrl = `/produkt/${product.slug || product.id}`;
   const hasVariants = product.variants && product.variants.length > 0;
@@ -40,15 +42,13 @@ function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={productUrl}
-      className="group block bg-white rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md"
-      style={{ border: '1px solid var(--grus-border)' }}
+      className="group block bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden transition-all duration-200 hover:shadow-md"
     >
-      <div className="relative aspect-square p-3" style={{ backgroundColor: 'var(--grus-sand)' }}>
+      <div className="relative aspect-square bg-[var(--grus-sand)] p-4">
         {product.image ? (
-          <img
+          <SmartImage
             src={product.image}
             alt={product.title}
-            loading="lazy"
             className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
@@ -57,22 +57,22 @@ function ProductCard({ product }: { product: Product }) {
           </div>
         )}
         {isOnSale && (
-          <span className="absolute top-2 right-2 bg-[var(--grus-accent)] text-white text-xs font-medium rounded-md px-2 py-0.5">
+          <span className="absolute top-2 right-2 bg-[var(--grus-accent)] text-white text-xs font-bold rounded-lg px-2 py-1">
             Tilbud
           </span>
         )}
       </div>
       <div className="p-4">
-        <span className="text-xs text-[var(--grus-green)] font-medium uppercase tracking-wide">
+        <span className="text-xs font-semibold uppercase tracking-wide text-[var(--grus-green)]">
           {product.category}
         </span>
-        <h3 className="text-sm font-semibold text-[var(--grus-dark)] mt-1 line-clamp-2 leading-snug">
+        <h3 className="text-sm font-medium text-[var(--grus-dark)] mt-1 line-clamp-2 leading-snug min-h-[2.5rem]">
           {product.title}
         </h3>
         <div className="mt-2">
           {isOnSale ? (
             <div className="flex items-baseline gap-2">
-              <span className="text-base font-bold text-[var(--grus-dark)]">
+              <span className="text-base font-bold text-[var(--grus-accent)]">
                 {formatPrice(product.salePrice!)}
               </span>
               <span className="text-sm text-gray-400 line-through">
@@ -86,10 +86,13 @@ function ProductCard({ product }: { product: Product }) {
             </span>
           )}
         </div>
+        {product.deliveryIncluded && (
+          <p className="text-xs text-gray-400 mt-0.5">inkl. levering</p>
+        )}
       </div>
       <div className="px-4 pb-4">
-        <span className="text-sm text-[var(--grus-green)] font-medium group-hover:underline">
-          Se produkt
+        <span className="block w-full text-center text-sm text-[var(--grus-green)] font-semibold border border-[var(--grus-green)] py-2.5 rounded-lg group-hover:bg-[var(--grus-green-light)] transition-colors">
+          Se produkt &rarr;
         </span>
       </div>
     </Link>
@@ -257,11 +260,11 @@ export default function ProductDetail() {
         {/* Breadcrumbs */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
           <nav className="flex items-center gap-1 text-sm text-gray-500">
-            <Link href="/" className="hover:text-gray-700 transition-colors">
+            <Link href="/" className="hover:text-[var(--grus-dark)] transition-colors">
               Forside
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
-            <Link href="/shop" className="hover:text-gray-700 transition-colors">
+            <Link href="/shop" className="hover:text-[var(--grus-dark)] transition-colors">
               Shop
             </Link>
             {product.category && (
@@ -269,7 +272,7 @@ export default function ProductDetail() {
                 <ChevronRight className="w-3.5 h-3.5" />
                 <Link
                   href={`/shop/${product.categorySlug}`}
-                  className="hover:text-gray-700 transition-colors"
+                  className="hover:text-[var(--grus-dark)] transition-colors"
                 >
                   {product.category}
                 </Link>
@@ -288,7 +291,7 @@ export default function ProductDetail() {
             {/* LEFT: Image Gallery */}
             <div className="min-w-0">
               {/* Main image */}
-              <div className="aspect-square rounded-xl p-4 overflow-hidden" style={{ backgroundColor: 'var(--grus-sand)' }}>
+              <div className="aspect-square rounded-xl p-4 overflow-hidden bg-[var(--grus-sand)]">
                 {images.length > 0 && images[0] ? (
                   <img
                     key={currentImageIndex}
@@ -332,7 +335,7 @@ export default function ProductDetail() {
               {/* Category badge */}
               {product.category && (
                 <Link href={`/shop/${product.categorySlug}`}>
-                  <span className="inline-block text-xs bg-[var(--grus-green-light)] text-[var(--grus-green)] px-3 py-1 rounded-full font-medium">
+                  <span className="inline-block text-xs bg-[var(--grus-green-light)] text-[var(--grus-green)] px-3 py-1 rounded-full font-semibold uppercase tracking-wide">
                     {product.category}
                   </span>
                 </Link>
@@ -435,10 +438,10 @@ export default function ProductDetail() {
                   <div className="flex items-center gap-2 mb-3">
                     <Tag className="w-4 h-4 text-[var(--grus-green)]" />
                     <span className="text-sm font-semibold text-[var(--grus-dark)]">
-                      Spar ved at købe flere
+                      Spar ved at kobe flere
                     </span>
                   </div>
-                  <div className="border border-[var(--grus-border)] rounded-lg overflow-hidden">
+                  <div className="border border-[var(--grus-border)] rounded-xl overflow-hidden">
                     <div className="grid grid-cols-3 text-xs font-medium text-gray-500 uppercase tracking-wide px-4 py-2.5 bg-gray-50 border-b border-[var(--grus-border)]">
                       <span>Antal</span>
                       <span className="text-right">Pris pr. stk</span>
@@ -529,7 +532,7 @@ export default function ProductDetail() {
                 <button
                   onClick={handleAddToCart}
                   disabled={hasVariants && !allVariantsSelected}
-                  className={`w-full py-3.5 px-6 rounded-xl font-semibold text-base transition-all duration-200 ${
+                  className={`w-full py-3.5 px-6 rounded-lg font-semibold text-base transition-all duration-200 ${
                     addedToCart
                       ? 'bg-[var(--grus-green)] text-white'
                       : hasVariants && !allVariantsSelected
@@ -540,12 +543,12 @@ export default function ProductDetail() {
                   {addedToCart ? (
                     <span className="inline-flex items-center justify-center gap-2">
                       <Check className="w-5 h-5" />
-                      Tilføjet til kurv
+                      Tilfojet til kurv
                     </span>
                   ) : hasVariants && !allVariantsSelected ? (
-                    'Vælg variant'
+                    'Vaelg variant'
                   ) : (
-                    `Læg i kurv \u2014 ${formatPrice(totalPrice)}`
+                    `Laeg i kurv \u2014 ${formatPrice(totalPrice)}`
                   )}
                 </button>
               </div>
@@ -590,9 +593,9 @@ export default function ProductDetail() {
           {relatedProducts.length > 0 && (
             <div className="border-t border-[var(--grus-border)] mt-12 pt-8">
               <h2 className="font-display text-xl lg:text-2xl font-bold text-[var(--grus-dark)] mb-6">
-                Andre kunder købte også
+                Andre kunder kobte ogsa
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {relatedProducts.map((rp) => (
                   <ProductCard key={rp.id} product={rp} />
                 ))}
