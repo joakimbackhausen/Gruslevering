@@ -21,7 +21,8 @@ function Router() {
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Indlæser...</div>}>
       <Switch>
         <Route path="/" component={Home} />
-        <Route path="/shop/:kategori?" component={Shop} />
+        <Route path="/shop" component={Shop} />
+        <Route path="/shop/:kategori" component={Shop} />
         <Route path="/produkt/:id" component={ProductDetail} />
         <Route path="/volumenberegner" component={VolumeCalculator} />
         <Route path="/levering" component={Delivery} />
