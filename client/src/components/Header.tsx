@@ -14,23 +14,16 @@ interface Category {
   parentId: number | null;
 }
 
-const NAV_LINKS = [
-  { label: 'Produkter', href: '/shop', hasDropdown: true },
-  { label: 'Levering', href: '/levering' },
-  { label: 'Beregner', href: '/volumenberegner' },
-  { label: 'Om os', href: '/om-os' },
-  { label: 'Kontakt', href: '/kontakt' },
-];
-
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [announcementVisible, setAnnouncementVisible] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [cartPulse, setCartPulse] = useState(false);
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const dropdownTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
   const { totalItems, setIsOpen } = useCart();
   const prevTotalItems = useRef(totalItems);
 
@@ -53,7 +46,7 @@ export default function Header() {
     window.addEventListener('resize', updateCSSVar);
     if (document.fonts?.ready) document.fonts.ready.then(updateCSSVar);
     return () => window.removeEventListener('resize', updateCSSVar);
-  }, [updateCSSVar, announcementVisible]);
+  }, [updateCSSVar]);
 
   // Scroll detection
   useEffect(() => {
@@ -65,7 +58,7 @@ export default function Header() {
   // Close menus on route change
   useEffect(() => {
     setMobileOpen(false);
-    setDropdownOpen(false);
+    setSearchOpen(false);
   }, [location]);
 
   // Lock body scroll when mobile menu is open
@@ -74,7 +67,21 @@ export default function Header() {
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
-  // Cart pulse animation when items change
+  // Focus search input when opened
+  useEffect(() => {
+    if (searchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchOpen]);
+
+  // Focus mobile search when menu opens
+  useEffect(() => {
+    if (mobileOpen && mobileSearchRef.current) {
+      setTimeout(() => mobileSearchRef.current?.focus(), 300);
+    }
+  }, [mobileOpen]);
+
+  // Cart pulse animation
   useEffect(() => {
     if (totalItems > prevTotalItems.current) {
       setCartPulse(true);
@@ -84,236 +91,186 @@ export default function Header() {
     prevTotalItems.current = totalItems;
   }, [totalItems]);
 
-  const handleDropdownEnter = () => {
-    clearTimeout(dropdownTimeout.current);
-    setDropdownOpen(true);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setSearchOpen(false);
+    }
   };
 
-  const handleDropdownLeave = () => {
-    dropdownTimeout.current = setTimeout(() => setDropdownOpen(false), 180);
-  };
-
-  const isActive = (href: string) => {
-    if (href === '/shop') return location.startsWith('/shop');
-    return location === href;
-  };
+  const isActiveCategory = (slug: string) => location === `/shop/${slug}`;
 
   return (
     <div ref={wrapperRef} className="fixed top-0 left-0 right-0 z-50">
-      {/* Announcement bar */}
-      {announcementVisible && (
-        <div
-          className="relative flex items-center justify-center h-7"
-          style={{ backgroundColor: 'var(--grus-dark)' }}
-        >
-          <p
-            className="font-sans text-[10px] uppercase tracking-[0.2em] text-center"
-            style={{ color: 'var(--grus-sand)' }}
-          >
-            Fri levering i hele Danmark
-          </p>
-          <button
-            onClick={() => setAnnouncementVisible(false)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
-            aria-label="Luk"
-          >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <line x1="1" y1="1" x2="9" y2="9" />
-              <line x1="9" y1="1" x2="1" y2="9" />
-            </svg>
-          </button>
-        </div>
-      )}
-
-      {/* Main header */}
-      <header
-        className={`transition-all duration-300 ${
-          scrolled ? 'glass shadow-[0_1px_12px_rgba(0,0,0,0.06)]' : 'bg-transparent'
-        }`}
-        style={{ height: 'var(--header-main-h, 72px)' }}
+      {/* ── Top info bar (desktop only) ── */}
+      <div
+        className="hidden lg:block"
+        style={{ backgroundColor: 'var(--grus-dark)' }}
       >
-        <style>{`
-          :root { --header-main-h: 72px; }
-          @media (max-width: 1023px) { :root { --header-main-h: 60px; } }
-        `}</style>
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-9">
+          <div className="flex items-center gap-5">
+            <a
+              href="tel:+4572494444"
+              className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              Ring: 72 49 44 44
+            </a>
+            <a
+              href="mailto:Info@kaervangmaterialer.dk"
+              className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              Info@kaervangmaterialer.dk
+            </a>
+          </div>
+          <div className="flex items-center gap-5">
+            <span className="flex items-center gap-1.5 text-white/80 text-xs">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+              Fri levering i hele Danmark
+            </span>
+            <span className="flex items-center gap-1 text-white/80 text-xs">
+              <span className="text-yellow-400">&#9733;</span>
+              Trustpilot 4.8
+            </span>
+          </div>
+        </div>
+      </div>
 
-        <div className="max-w-[1260px] mx-auto px-5 sm:px-6 xl:px-10 h-full">
-          <div className="flex items-center justify-between h-full">
+      {/* ── Main header ── */}
+      <header
+        className={`bg-white transition-shadow duration-200 ${
+          scrolled ? 'shadow-md' : 'shadow-sm'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[60px] lg:h-[70px]">
+          <div className="flex items-center justify-between h-full gap-4">
 
-            {/* Left: hamburger (mobile) */}
-            <div className="lg:hidden flex items-center">
-              <button
-                onClick={() => setMobileOpen(!mobileOpen)}
-                className="p-1.5 -ml-1.5 transition-colors"
-                style={{ color: 'var(--grus-dark)' }}
-                aria-label="Menu"
-              >
-                {mobileOpen ? (
-                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                    <line x1="4" y1="4" x2="18" y2="18" />
-                    <line x1="18" y1="4" x2="4" y2="18" />
-                  </svg>
-                ) : (
-                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                    <line x1="3" y1="6" x2="19" y2="6" />
-                    <line x1="3" y1="11" x2="19" y2="11" />
-                    <line x1="3" y1="16" x2="15" y2="16" />
-                  </svg>
-                )}
-              </button>
-            </div>
+            {/* Mobile: hamburger */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden p-2 -ml-2 text-gray-700 hover:text-gray-900 transition-colors"
+              aria-label="Abn menu"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
 
             {/* Logo */}
             <Link
               href="/"
-              className="flex flex-col items-start leading-none shrink-0 lg:mr-12 absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0"
+              className="flex items-center gap-2 shrink-0"
             >
-              <span
-                className="font-display text-[20px] sm:text-[22px] font-semibold uppercase tracking-[0.08em]"
-                style={{ color: 'var(--grus-dark)' }}
-              >
-                GRUSLEVERING
-              </span>
-              <span
-                className="font-display text-[10px] uppercase tracking-[0.25em] -mt-0.5"
-                style={{ color: 'var(--grus-accent)' }}
-              >
-                .DK
-              </span>
+              {/* Leaf icon */}
+              <svg width="28" height="28" viewBox="0 0 32 32" fill="none" className="hidden sm:block">
+                <path
+                  d="M8 28c0 0 2-12 12-18 0 0-6 8-4 18"
+                  stroke="var(--grus-green)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="var(--grus-green-light)"
+                />
+                <path
+                  d="M12 28c2-6 5-10 8-12"
+                  stroke="var(--grus-green)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  opacity="0.6"
+                />
+              </svg>
+              <div className="font-display leading-none">
+                <span className="text-xl lg:text-[22px] font-bold" style={{ color: 'var(--grus-green)' }}>
+                  Gruslevering
+                </span>
+                <span className="text-xl lg:text-[22px] font-bold text-gray-800">.dk</span>
+              </div>
             </Link>
 
-            {/* Desktop navigation */}
-            <nav className="hidden lg:flex items-center h-full flex-1 justify-center gap-1">
-              {NAV_LINKS.map((link) => (
-                <div
-                  key={link.href}
-                  className="relative h-full flex items-center"
-                  onMouseEnter={() => link.hasDropdown ? handleDropdownEnter() : setDropdownOpen(false)}
-                  onMouseLeave={link.hasDropdown ? handleDropdownLeave : undefined}
+            {/* Desktop: search bar */}
+            <form
+              onSubmit={handleSearch}
+              className="hidden lg:flex flex-1 max-w-xl mx-8"
+            >
+              <div className="relative w-full">
+                <input
+                  ref={searchInputRef}
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Sog efter produkter..."
+                  className="w-full h-10 pl-4 pr-10 rounded-full border border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] focus:ring-2 focus:ring-[var(--grus-green)]/20 transition-all"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                  aria-label="Sog"
                 >
-                  <Link
-                    href={link.href}
-                    className="group relative h-full flex items-center px-4 font-display text-[13px] uppercase tracking-[0.12em] font-medium transition-opacity"
-                    style={{
-                      color: 'var(--grus-dark)',
-                      opacity: isActive(link.href) ? 1 : 0.65,
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
-                    onMouseLeave={(e) => {
-                      if (!isActive(link.href)) (e.currentTarget as HTMLElement).style.opacity = '0.65';
-                    }}
-                  >
-                    {link.label}
-                    {link.hasDropdown && (
-                      <svg
-                        width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor"
-                        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                        className="ml-1.5 opacity-50"
-                      >
-                        <polyline points="1,1 4,4 7,1" />
-                      </svg>
-                    )}
-                    {/* Active / hover underline */}
-                    <span
-                      className="absolute bottom-5 left-4 right-4 h-[1.5px] origin-left transition-transform duration-300"
-                      style={{
-                        backgroundColor: 'var(--grus-dark)',
-                        transform: isActive(link.href) ? 'scaleX(1)' : 'scaleX(0)',
-                      }}
-                    />
-                    {/* Hover underline via CSS (we use a second span for the hover effect) */}
-                    {!isActive(link.href) && (
-                      <span
-                        className="absolute bottom-5 left-4 right-4 h-[1.5px] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"
-                        style={{ backgroundColor: 'var(--grus-dark)' }}
-                      />
-                    )}
-                  </Link>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                </button>
+              </div>
+            </form>
 
-                  {/* Products dropdown */}
-                  {link.hasDropdown && dropdownOpen && (
-                    <div
-                      className="absolute top-full left-0 pt-2"
-                      onMouseEnter={handleDropdownEnter}
-                      onMouseLeave={handleDropdownLeave}
-                    >
-                      <div
-                        className="bg-white/95 backdrop-blur-xl border border-black/[0.06] shadow-[0_12px_40px_rgba(0,0,0,0.1)] min-w-[240px]"
-                        style={{ borderTop: '2px solid var(--grus-dark)' }}
-                      >
-                        <div className="py-2">
-                          <Link
-                            href="/shop"
-                            className="block px-5 py-2.5 font-display text-[12px] uppercase tracking-[0.1em] font-semibold transition-colors"
-                            style={{ color: 'var(--grus-dark)' }}
-                            onClick={() => setDropdownOpen(false)}
-                          >
-                            Alle produkter
-                          </Link>
-                          <div
-                            className="mx-5 h-px my-1"
-                            style={{ backgroundColor: 'var(--grus-sand)' }}
-                          />
-                          {parentCategories.map((cat) => (
-                            <Link
-                              key={cat.id}
-                              href={`/shop/${cat.slug}`}
-                              className="group/item flex items-center justify-between px-5 py-2 font-sans text-[13px] transition-all hover:pl-6"
-                              style={{ color: 'var(--grus-dark)' }}
-                              onClick={() => setDropdownOpen(false)}
-                            >
-                              <span className="opacity-70 group-hover/item:opacity-100 transition-opacity">
-                                {cat.name}
-                              </span>
-                              <span
-                                className="text-[11px] opacity-30 font-display"
-                              >
-                                {cat.count}
-                              </span>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </nav>
-
-            {/* Right side */}
-            <div className="flex items-center gap-5">
-              {/* Phone - desktop only */}
-              <a
-                href="tel:+4572494444"
-                className="hidden lg:flex items-center gap-1.5 font-sans text-[12px] tracking-wide transition-opacity opacity-50 hover:opacity-100"
-                style={{ color: 'var(--grus-dark)' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                </svg>
-                72 49 44 44
-              </a>
-
-              {/* Cart */}
+            {/* Right: actions */}
+            <div className="flex items-center gap-1 sm:gap-3">
+              {/* Mobile search toggle */}
               <button
-                className="relative p-1 transition-colors"
-                style={{ color: 'var(--grus-dark)' }}
+                onClick={() => setSearchOpen(!searchOpen)}
+                className="lg:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                aria-label="Sog"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </button>
+
+              {/* Desktop: account link */}
+              <Link
+                href="/kontakt"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-2 text-gray-600 hover:text-gray-900 text-sm transition-colors"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="text-xs font-medium">Kontakt</span>
+              </Link>
+
+              {/* Cart button */}
+              <button
                 onClick={() => setIsOpen(true)}
+                className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors"
                 aria-label="Kurv"
               >
                 <svg
-                  width="21" height="21" viewBox="0 0 24 24" fill="none"
+                  width="22" height="22" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-                  className={`transition-transform duration-300 ${cartPulse ? 'scale-110' : 'scale-100'}`}
+                  className={`transition-transform duration-200 ${cartPulse ? 'scale-110' : 'scale-100'}`}
                 >
-                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <path d="M16 10a4 4 0 0 1-8 0" />
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                 </svg>
                 {totalItems > 0 && (
                   <span
-                    className="absolute -top-0.5 -right-1 font-display text-[10px] font-semibold leading-none"
-                    style={{ color: 'var(--grus-accent)' }}
+                    className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-5 h-5 px-1 rounded-full text-[11px] font-bold text-white"
+                    style={{ backgroundColor: 'var(--grus-green)' }}
                   >
                     {totalItems}
                   </span>
@@ -322,96 +279,287 @@ export default function Header() {
             </div>
           </div>
         </div>
+
+        {/* Mobile search dropdown */}
+        {searchOpen && (
+          <div className="lg:hidden border-t border-gray-100 px-4 py-3 bg-white">
+            <form onSubmit={handleSearch} className="relative">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Sog efter produkter..."
+                autoFocus
+                className="w-full h-10 pl-4 pr-10 rounded-full border border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] focus:ring-2 focus:ring-[var(--grus-green)]/20 transition-all"
+              />
+              <button
+                type="submit"
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-gray-500"
+                aria-label="Sog"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        )}
       </header>
 
-      {/* Mobile full-screen overlay */}
-      <div
-        className={`lg:hidden fixed inset-0 z-[60] transition-all duration-500 ${
-          mobileOpen
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
-        }`}
-        style={{ backgroundColor: 'var(--grus-dark)' }}
+      {/* ── Green category navigation bar ── */}
+      <nav
+        className="w-full overflow-x-auto"
+        style={{ backgroundColor: 'var(--grus-green)' }}
       >
-        {/* Close button */}
-        <button
-          onClick={() => setMobileOpen(false)}
-          className="absolute top-5 right-5 p-2 text-white/50 hover:text-white transition-colors z-10"
-          aria-label="Luk menu"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <line x1="4" y1="4" x2="20" y2="20" />
-            <line x1="20" y1="4" x2="4" y2="20" />
-          </svg>
-        </button>
-
-        {/* Mobile nav links */}
-        <nav className="flex flex-col justify-center h-full px-10">
-          {NAV_LINKS.map((link, i) => (
-            <div key={link.href}>
-              <Link
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="block py-3 transition-all duration-500"
-                style={{
-                  transform: mobileOpen ? 'translateY(0)' : 'translateY(20px)',
-                  opacity: mobileOpen ? 1 : 0,
-                  transitionDelay: mobileOpen ? `${100 + i * 60}ms` : '0ms',
-                }}
-              >
-                <span
-                  className="font-display text-[32px] sm:text-[38px] font-semibold uppercase tracking-[0.06em] transition-colors"
-                  style={{
-                    color: isActive(link.href) ? 'var(--grus-accent)' : 'var(--grus-sand)',
-                  }}
-                >
-                  {link.label}
-                </span>
-              </Link>
-
-              {/* Category sub-links under Produkter */}
-              {link.hasDropdown && parentCategories.length > 0 && (
-                <div className="ml-1 mb-2">
-                  {parentCategories.slice(0, 6).map((cat, ci) => (
-                    <Link
-                      key={cat.id}
-                      href={`/shop/${cat.slug}`}
-                      onClick={() => setMobileOpen(false)}
-                      className="block py-1.5 transition-all duration-500"
-                      style={{
-                        transform: mobileOpen ? 'translateY(0)' : 'translateY(12px)',
-                        opacity: mobileOpen ? 0.5 : 0,
-                        transitionDelay: mobileOpen ? `${160 + i * 60 + ci * 40}ms` : '0ms',
-                      }}
-                    >
-                      <span className="font-sans text-[14px] tracking-wide text-white/50 hover:text-white transition-colors">
-                        {cat.name}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Phone at bottom of mobile menu */}
-          <div
-            className="mt-10 pt-6 transition-all duration-500"
-            style={{
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-              transform: mobileOpen ? 'translateY(0)' : 'translateY(20px)',
-              opacity: mobileOpen ? 0.4 : 0,
-              transitionDelay: mobileOpen ? '450ms' : '0ms',
-            }}
-          >
-            <a
-              href="tel:+4572494444"
-              className="font-sans text-[13px] tracking-wider text-white/50 hover:text-white transition-colors"
+        <style>{`
+          .cat-nav-scroll::-webkit-scrollbar { display: none; }
+          .cat-nav-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        `}</style>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="cat-nav-scroll flex items-center gap-0.5 overflow-x-auto py-0">
+            <Link
+              href="/shop"
+              className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
+                location === '/shop' ? 'bg-white/20' : 'hover:bg-white/10'
+              }`}
             >
-              +45 72 49 44 44
-            </a>
+              Alle produkter
+            </Link>
+            {parentCategories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/shop/${cat.slug}`}
+                className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
+                  isActiveCategory(cat.slug) ? 'bg-white/20' : 'hover:bg-white/10'
+                }`}
+              >
+                {cat.name}
+              </Link>
+            ))}
+            <span className="shrink-0 w-px h-5 bg-white/20 mx-1" />
+            <Link
+              href="/volumenberegner"
+              className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
+                location === '/volumenberegner' ? 'bg-white/20' : 'hover:bg-white/10'
+              }`}
+            >
+              Volumenberegner
+            </Link>
+            <Link
+              href="/levering"
+              className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
+                location === '/levering' ? 'bg-white/20' : 'hover:bg-white/10'
+              }`}
+            >
+              Levering
+            </Link>
+            <Link
+              href="/om-os"
+              className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
+                location === '/om-os' ? 'bg-white/20' : 'hover:bg-white/10'
+              }`}
+            >
+              Om os
+            </Link>
           </div>
-        </nav>
+        </div>
+      </nav>
+
+      {/* ── Mobile slide-in menu ── */}
+      {/* Backdrop */}
+      <div
+        className={`lg:hidden fixed inset-0 bg-black/40 z-[60] transition-opacity duration-300 ${
+          mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setMobileOpen(false)}
+      />
+
+      {/* Drawer */}
+      <div
+        className={`lg:hidden fixed top-0 left-0 bottom-0 w-80 max-w-[85vw] bg-white z-[70] transform transition-transform duration-300 ease-out ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between h-[60px] px-5 border-b border-gray-100">
+          <Link href="/" onClick={() => setMobileOpen(false)} className="font-display">
+            <span className="text-lg font-bold" style={{ color: 'var(--grus-green)' }}>Gruslevering</span>
+            <span className="text-lg font-bold text-gray-800">.dk</span>
+          </Link>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="p-2 -mr-2 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Luk menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Mobile search */}
+        <div className="px-5 py-3 border-b border-gray-100">
+          <form onSubmit={(e) => { handleSearch(e); setMobileOpen(false); }}>
+            <div className="relative">
+              <input
+                ref={mobileSearchRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Sog efter produkter..."
+                className="w-full h-10 pl-4 pr-10 rounded-full border border-gray-200 bg-gray-50 text-sm placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] transition-colors"
+              />
+              <button
+                type="submit"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                aria-label="Sog"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Navigation links */}
+        <div className="flex-1 overflow-y-auto py-2">
+          {/* Categories section */}
+          <div className="px-2">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Kategorier
+            </div>
+            <Link
+              href="/shop"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                location === '/shop'
+                  ? 'text-[var(--grus-green)] bg-[var(--grus-green-light)]'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Alle produkter
+            </Link>
+            {parentCategories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/shop/${cat.slug}`}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  isActiveCategory(cat.slug)
+                    ? 'text-[var(--grus-green)] bg-[var(--grus-green-light)] font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <span>{cat.name}</span>
+                <span className="text-xs text-gray-400">{cat.count}</span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div className="my-2 mx-5 h-px bg-gray-100" />
+
+          {/* Other links */}
+          <div className="px-2">
+            <Link
+              href="/volumenberegner"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                location === '/volumenberegner'
+                  ? 'text-[var(--grus-green)] bg-[var(--grus-green-light)]'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2" />
+                <line x1="8" y1="6" x2="16" y2="6" />
+                <line x1="8" y1="10" x2="10" y2="10" />
+                <line x1="14" y1="10" x2="16" y2="10" />
+                <line x1="8" y1="14" x2="10" y2="14" />
+                <line x1="14" y1="14" x2="16" y2="14" />
+                <line x1="8" y1="18" x2="16" y2="18" />
+              </svg>
+              Volumenberegner
+            </Link>
+            <Link
+              href="/levering"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                location === '/levering'
+                  ? 'text-[var(--grus-green)] bg-[var(--grus-green-light)]'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="3" width="15" height="13" />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                <circle cx="5.5" cy="18.5" r="2.5" />
+                <circle cx="18.5" cy="18.5" r="2.5" />
+              </svg>
+              Levering
+            </Link>
+            <Link
+              href="/om-os"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                location === '/om-os'
+                  ? 'text-[var(--grus-green)] bg-[var(--grus-green-light)]'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              Om os
+            </Link>
+            <Link
+              href="/kontakt"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                location === '/kontakt'
+                  ? 'text-[var(--grus-green)] bg-[var(--grus-green-light)]'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              Kontakt
+            </Link>
+          </div>
+        </div>
+
+        {/* Contact info at bottom */}
+        <div className="border-t border-gray-100 px-5 py-4">
+          <a
+            href="tel:+4572494444"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            +45 72 49 44 44
+          </a>
+          <a
+            href="mailto:Info@kaervangmaterialer.dk"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors mt-2"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+            Info@kaervangmaterialer.dk
+          </a>
+          <p className="text-xs text-gray-400 mt-2">
+            Tylstrupvej 1, 9382 Tylstrup
+          </p>
+        </div>
       </div>
 
       <CartDrawer />
