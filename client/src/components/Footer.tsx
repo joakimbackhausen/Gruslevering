@@ -27,12 +27,12 @@ const usps = [
   {
     icon: ShieldCheck,
     title: 'Dansk kvalitet',
-    description: 'Materialer fra danske leverandorer',
+    description: 'Materialer fra danske leverandører',
   },
   {
     icon: Headphones,
     title: 'Kundeservice',
-    description: 'Vi er klar til at hjaelpe dig',
+    description: 'Vi er klar til at hjælpe dig',
   },
 ];
 

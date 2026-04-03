@@ -435,7 +435,7 @@ export default function ProductDetail() {
                   <div className="flex items-center gap-2 mb-3">
                     <Tag className="w-4 h-4 text-[var(--grus-green)]" />
                     <span className="text-sm font-semibold text-[var(--grus-dark)]">
-                      Spar ved at kobe flere
+                      Spar ved at købe flere
                     </span>
                   </div>
                   <div className="border border-[var(--grus-border)] rounded-lg overflow-hidden">
@@ -540,12 +540,12 @@ export default function ProductDetail() {
                   {addedToCart ? (
                     <span className="inline-flex items-center justify-center gap-2">
                       <Check className="w-5 h-5" />
-                      Tilfojet til kurv
+                      Tilføjet til kurv
                     </span>
                   ) : hasVariants && !allVariantsSelected ? (
-                    'Vaelg variant'
+                    'Vælg variant'
                   ) : (
-                    `Laeg i kurv \u2014 ${formatPrice(totalPrice)}`
+                    `Læg i kurv \u2014 ${formatPrice(totalPrice)}`
                   )}
                 </button>
               </div>
@@ -590,7 +590,7 @@ export default function ProductDetail() {
           {relatedProducts.length > 0 && (
             <div className="border-t border-[var(--grus-border)] mt-12 pt-8">
               <h2 className="font-display text-xl lg:text-2xl font-bold text-[var(--grus-dark)] mb-6">
-                Andre kunder kobte ogsa
+                Andre kunder købte også
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
                 {relatedProducts.map((rp) => (

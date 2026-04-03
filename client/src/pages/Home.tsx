@@ -83,13 +83,13 @@ const categoryGradients = [
 
 const testimonials = [
   {
-    text: 'Super nemt at bestille online. Gruset blev leveret praecis som aftalt, og kvaliteten var i top. Kan varmt anbefales!',
+    text: 'Super nemt at bestille online. Gruset blev leveret præcis som aftalt, og kvaliteten var i top. Kan varmt anbefales!',
     stars: 5,
     name: 'Martin H.',
     location: 'Aalborg',
   },
   {
-    text: 'Fantastisk service og hurtig levering. Vi brugte volumenberegneren og bestilte praecis den rigtige maengde. Meget tilfreds.',
+    text: 'Fantastisk service og hurtig levering. Vi brugte volumenberegneren og bestilte præcis den rigtige mængde. Meget tilfreds.',
     stars: 5,
     name: 'Lene K.',
     location: 'Aarhus',
@@ -98,7 +98,7 @@ const testimonials = [
     text: 'Har bestilt flere gange nu. Altid god kvalitet og fair priser. Levering inden for 4 hverdage hver gang.',
     stars: 5,
     name: 'Thomas P.',
-    location: 'Koebenhavn',
+    location: 'København',
   },
 ];
 
@@ -108,7 +108,7 @@ const testimonials = [
 
 export default function Home() {
   useEffect(() => {
-    document.title = 'Gruslevering.dk - Grus, sand & sten leveret til doeren';
+    document.title = 'Gruslevering.dk - Grus, sand & sten leveret til døren';
   }, []);
 
   const { data: products = [], isLoading: loadingProducts } = useQuery<Product[]>({
@@ -135,13 +135,13 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════
           SECTION 1 - HERO BANNER
           ═══════════════════════════════════════════════════ */}
-      <section className="pt-4 px-4 sm:px-6 lg:px-8">
+      <section className="pt-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div
-            className="relative rounded-xl overflow-hidden"
+            className="relative rounded-2xl overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, #36332F 0%, #3a4a3d 30%, #54765D 70%, #6a8e73 100%)',
-              minHeight: '250px',
+              minHeight: '320px',
             }}
           >
             {/* Subtle pattern overlay */}
@@ -153,7 +153,7 @@ export default function Home() {
               }}
             />
 
-            <div className="relative z-10 px-6 sm:px-10 lg:px-14 py-12 sm:py-16 lg:py-20 max-w-2xl">
+            <div className="relative z-10 px-6 sm:px-10 lg:px-14 py-14 sm:py-20 lg:py-24 max-w-2xl">
               {/* Badge */}
               <span className="inline-flex items-center gap-1.5 bg-white/95 text-[var(--grus-dark)] text-xs font-semibold px-3 py-1.5 rounded-full mb-5">
                 <Truck className="w-3.5 h-3.5" />
@@ -164,12 +164,12 @@ export default function Home() {
               <h1 className="font-display font-bold text-white text-3xl sm:text-4xl lg:text-5xl leading-tight mb-4">
                 Grus, sand & sten
                 <br />
-                leveret til doeren
+                leveret til døren
               </h1>
 
               {/* Subtext */}
               <p className="text-white/80 text-base sm:text-lg mb-8 max-w-md">
-                Bestil online og faa leveret i hele Danmark
+                Bestil online og fåleveret i hele Danmark
               </p>
 
               {/* CTAs */}
@@ -186,7 +186,7 @@ export default function Home() {
                   className="inline-flex items-center gap-2 border border-white text-white font-semibold px-6 py-3 rounded-lg hover:bg-white/10 transition-all"
                 >
                   <Calculator className="w-4 h-4" />
-                  Beregn maengde
+                  Beregn mængde
                 </Link>
               </div>
             </div>
@@ -285,7 +285,7 @@ export default function Home() {
             <div className="flex items-end justify-between mb-8">
               <div>
                 <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl">
-                  Populaere produkter
+                  Populære produkter
                 </h2>
                 <div className="w-12 h-1 bg-[var(--grus-green)] rounded-full mt-3" />
               </div>
@@ -410,8 +410,8 @@ export default function Home() {
                   Beregn hvor meget du har brug for
                 </h2>
                 <p className="text-gray-600 text-sm sm:text-base max-w-lg">
-                  Brug vores volumenberegner til at finde ud af praecis hvor mange bigbags du skal
-                  bestille. Indtast dine maal og faa svar med det samme.
+                  Brug vores volumenberegner til at finde ud af præcis hvor mange bigbags du skal
+                  bestille. Indtast dine mål og få svar med det samme.
                 </p>
               </div>
 
@@ -420,7 +420,7 @@ export default function Home() {
                 href="/volumenberegner"
                 className="flex-shrink-0 inline-flex items-center gap-2 bg-[var(--grus-green)] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[var(--grus-green-hover)] transition-colors"
               >
-                Proev beregneren
+                Prøv beregneren
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

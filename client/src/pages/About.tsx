@@ -10,26 +10,26 @@ const values = [
     icon: Award,
     title: 'Kvalitet',
     description:
-      'Vi leverer kun materialer af hoejeste kvalitet. Alle vores produkter gennemgaar grundig kvalitetskontrol foer levering.',
+      'Vi leverer kun materialer af højeste kvalitet. Alle vores produkter gennemgår grundig kvalitetskontrol før levering.',
   },
   {
     icon: HeartHandshake,
     title: 'Service',
     description:
-      'Personlig betjening og hurtig levering er kernen i vores forretning. Vi goer det nemt at bestille byggematerialer.',
+      'Personlig betjening og hurtig levering er kernen i vores forretning. Vi gør det nemt at bestille byggematerialer.',
   },
   {
     icon: Leaf,
-    title: 'Baeredygtighed',
+    title: 'Bæredygtighed',
     description:
-      'Vi arbejder aktivt paa at reducere vores miljoeaftryk gennem ansvarlig sourcing og effektiv logistik.',
+      'Vi arbejder aktivt på at reducere vores miljøaftryk gennem ansvarlig sourcing og effektiv logistik.',
   },
 ];
 
 const facts = [
   { icon: Calendar, label: 'Etableret', value: '2008' },
   { icon: MapPin, label: 'Beliggenhed', value: 'Tylstrup (15 km nord for Aalborg)' },
-  { icon: Globe, label: 'Leveringsomraade', value: 'Hele Danmark' },
+  { icon: Globe, label: 'Leveringsområde', value: 'Hele Danmark' },
 ];
 
 const fadeUp = {
@@ -133,17 +133,17 @@ export default function About() {
                 </h2>
                 <div className="space-y-4 text-muted-foreground text-lg leading-relaxed">
                   <p>
-                    Kaervang Materialer ApS blev grundlagt i 2008 med en vision om at goere det
+                    Kaervang Materialer ApS blev grundlagt i 2008 med en vision om at gøre det
                     nemt og bekvemt at bestille byggematerialer med levering i hele Danmark.
                   </p>
                   <p>
                     Fra vores base i Tylstrup, 15 km nord for Aalborg, leverer vi et bredt
-                    sortiment af grus, sand, granitskaarver og andre materialer til baade private
+                    sortiment af grus, sand, granitskærver og andre materialer til både private
                     og erhvervskunder.
                   </p>
                   <p>
-                    Med gratis bigbag-levering til hele Danmark goer vi det saa nemt som muligt
-                    at faa de materialer, du har brug for, leveret direkte til doeeren.
+                    Med gratis bigbag-levering til hele Danmark gør vi det så nemt som muligt
+                    at få de materialer, du har brug for, leveret direkte til døren.
                   </p>
                 </div>
                 <div className="mt-8 flex flex-wrap gap-4">
@@ -191,7 +191,7 @@ export default function About() {
                 Hvad driver os
               </p>
               <h2 className="font-display font-bold text-3xl lg:text-4xl text-foreground">
-                Vores vaerdier
+                Vores værdier
               </h2>
             </motion.div>
 
@@ -237,10 +237,10 @@ export default function About() {
               transition={{ duration: 0.5 }}
             >
               <h2 className="font-display font-bold text-3xl lg:text-4xl text-white mb-4">
-                Har du spoergsmaal?
+                Har du spørgsmål?
               </h2>
               <p className="text-white/80 text-lg max-w-xl mx-auto mb-8">
-                Vi er altid klar til at hjaelpe dig med at finde de rette materialer til dit projekt.
+                Vi er altid klar til at hjælpe dig med at finde de rette materialer til dit projekt.
               </p>
               <Link
                 href="/kontakt"

@@ -159,7 +159,7 @@ export default function Header() {
             <button
               onClick={() => setMobileOpen(true)}
               className="lg:hidden p-2 -ml-2 text-[var(--grus-dark)] hover:text-[var(--grus-green)] transition-colors"
-              aria-label="Abn menu"
+              aria-label="Åbn menu"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -210,14 +210,14 @@ export default function Header() {
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Sog efter produkter..."
+                  placeholder="Søg efter produkter..."
                   className="w-full h-10 pl-4 pr-10 rounded-full bg-gray-50 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] focus:ring-2 focus:ring-[var(--grus-green)]/20 transition-all"
                   style={{ borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--grus-border)' }}
                 />
                 <button
                   type="submit"
                   className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-[var(--grus-stone)] transition-colors"
-                  aria-label="Sog"
+                  aria-label="Søg"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8" />
@@ -233,7 +233,7 @@ export default function Header() {
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
                 className="lg:hidden p-2 text-[var(--grus-dark)] hover:text-[var(--grus-green)] transition-colors"
-                aria-label="Sog"
+                aria-label="Søg"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />
@@ -289,14 +289,14 @@ export default function Header() {
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Sog efter produkter..."
+                placeholder="Søg efter produkter..."
                 autoFocus
                 className="w-full h-10 pl-4 pr-10 rounded-full border border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] focus:ring-2 focus:ring-[var(--grus-green)]/20 transition-all"
               />
               <button
                 type="submit"
                 className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-gray-500"
-                aria-label="Sog"
+                aria-label="Søg"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />
@@ -409,13 +409,13 @@ export default function Header() {
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Sog efter produkter..."
+                placeholder="Søg efter produkter..."
                 className="w-full h-10 pl-4 pr-10 rounded-full border border-gray-200 bg-gray-50 text-sm placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] transition-colors"
               />
               <button
                 type="submit"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                aria-label="Sog"
+                aria-label="Søg"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />

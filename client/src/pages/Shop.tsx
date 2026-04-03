@@ -28,9 +28,9 @@ const formatPrice = (price: number) =>
 type SortOption = 'popular' | 'price-asc' | 'price-desc' | 'name';
 
 const sortLabels: Record<SortOption, string> = {
-  popular: 'Populaere',
-  'price-asc': 'Pris lav-hoej',
-  'price-desc': 'Pris hoej-lav',
+  popular: 'Populære',
+  'price-asc': 'Pris lav-høj',
+  'price-desc': 'Pris høj-lav',
   name: 'Navn A-Z',
 };
 
@@ -181,7 +181,7 @@ function ProductCard({ product }: { product: Product }) {
             onClick={handleAddToCart}
             className="w-full bg-[var(--grus-green)] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--grus-green-hover)] transition-colors cursor-pointer"
           >
-            Laeg i kurv
+            Læg i kurv
           </button>
         )}
       </div>
@@ -627,7 +627,7 @@ export default function Shop() {
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--grus-stone)]" />
                   <input
                     type="text"
-                    placeholder="Soeg produkter..."
+                    placeholder="Søg produkter..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full text-sm border border-[var(--grus-border)] rounded-lg pl-10 pr-9 py-2.5 bg-white focus:border-[var(--grus-green)] focus:ring-1 focus:ring-[var(--grus-green)] focus:outline-none transition-colors"
@@ -727,7 +727,7 @@ export default function Shop() {
                     Ingen produkter fundet
                   </h3>
                   <p className="text-sm text-[var(--grus-stone)] mb-6 max-w-xs">
-                    Proev at justere dine filtre eller soeg efter noget andet.
+                    Prøv at justere dine filtre eller søg efter noget andet.
                   </p>
                   <button
                     onClick={clearFilters}

@@ -24,42 +24,42 @@ const deliveryMethods = [
     icon: Truck,
     title: 'Bigbag-levering',
     description:
-      'Vores mest populaere leveringsmetode. Materialerne leveres i bigbags med kranbil direkte til din adresse. Fri levering i hele Danmark til faste oeer.',
+      'Vores mest populære leveringsmetode. Materialerne leveres i bigbags med kranbil direkte til din adresse. Fri levering i hele Danmark til faste øer.',
   },
   {
     icon: Package,
     title: 'Tipvogn-levering',
     description:
-      'For stoerre projekter tilbyder vi levering med tipvogn. Kontakt os for pris og tilgaengelighed.',
+      'For større projekter tilbyder vi levering med tipvogn. Kontakt os for pris og tilgængelighed.',
   },
   {
     icon: MapPin,
     title: 'Afhentning',
     description:
-      'Du er velkommen til at hente selv paa vores adresse: Tylstrupvej 1, 9382 Tylstrup. Aabningstider: Hverdage 8:00-16:00.',
+      'Du er velkommen til at hente selv på vores adresse: Tylstrupvej 1, 9382 Tylstrup. Åbningstider: Hverdage 8:00-16:00.',
   },
 ];
 
 const faqItems = [
   {
-    question: 'Hvor hurtigt kan jeg faa leveret?',
+    question: 'Hvor hurtigt kan jeg få leveret?',
     answer:
-      'Typisk 3-5 hverdage efter bestilling. Ved akut behov, kontakt os - vi goer vores bedste for at finde en hurtig loesning.',
+      'Typisk 3-5 hverdage efter bestilling. Ved akut behov, kontakt os - vi gør vores bedste for at finde en hurtig løsning.',
   },
   {
-    question: 'Kan I levere til oeer?',
+    question: 'Kan I levere til øer?',
     answer:
-      'Ja, vi leverer til alle faste danske oeer. Levering til oeer er inkluderet i vores gratis leveringsservice for bigbags.',
+      'Ja, vi leverer til alle faste danske øer. Levering til øer er inkluderet i vores gratis leveringsservice for bigbags.',
   },
   {
     question: 'Hvad er en bigbag?',
     answer:
-      'En bigbag er en stor saek (ca. 90x90x90 cm) der typisk rummer omkring 1.000 kg materiale. Det er en praktisk og effektiv maade at faa leveret granitskaarver, sand, grus og andre byggematerialer paa.',
+      'En bigbag er en stor sæk (ca. 90x90x90 cm) der typisk rummer omkring 1.000 kg materiale. Det er en praktisk og effektiv måde at få leveret granitskærver, sand, grus og andre byggematerialer på.',
   },
   {
     question: 'Kan jeg returnere materialer?',
     answer:
-      'Kontakt os paa telefon +45 72 49 44 44 eller email Info@kaervangmaterialer.dk, saa finder vi en loesning. Bemaaerk at materialer leveret i bigbags normalt ikke kan returneres, men vi hjaelper gerne med at finde det rette produkt foer bestilling.',
+      'Kontakt os på telefon +45 72 49 44 44 eller email Info@kaervangmaterialer.dk, så finder vi en løsning. Bemærk at materialer leveret i bigbags normalt ikke kan returneres, men vi hjælper gerne med at finde det rette produkt før bestilling.',
   },
 ];
 
@@ -179,13 +179,13 @@ export default function Delivery() {
               className="text-center max-w-2xl mx-auto"
             >
               <h2 className="font-display font-bold text-3xl lg:text-4xl text-foreground mb-6">
-                Leveringsomraade
+                Leveringsområde
               </h2>
               <div className="space-y-4">
                 <div className="flex items-start gap-3 text-left bg-white rounded-lg p-5 shadow-sm">
                   <CheckCircle className="w-6 h-6 mt-0.5 flex-shrink-0" style={{ color: 'var(--grus-green)' }} />
                   <p className="text-foreground text-lg">
-                    Vi leverer til hele Danmark, inkl. alle faste oeer.
+                    Vi leverer til hele Danmark, inkl. alle faste øer.
                   </p>
                 </div>
                 <div className="flex items-start gap-3 text-left bg-white rounded-lg p-5 shadow-sm">
@@ -283,7 +283,7 @@ export default function Delivery() {
                   <HelpCircle className="w-6 h-6" style={{ color: 'var(--grus-green)' }} />
                 </div>
                 <h2 className="font-display font-bold text-3xl lg:text-4xl text-foreground">
-                  Ofte stillede spoergsmaal
+                  Ofte stillede spørgsmål
                 </h2>
               </div>
 

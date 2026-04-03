@@ -30,7 +30,7 @@ const contactDetails = [
   },
   {
     icon: Clock,
-    label: 'Aabningstider',
+    label: 'Åbningstider',
     content: 'Hverdage 8:00-16:00',
   },
 ];
@@ -183,7 +183,7 @@ export default function Contact() {
                         className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-foreground focus:outline-none focus:ring-2 transition-shadow"
                         style={{ '--tw-ring-color': 'var(--grus-green)' } as React.CSSProperties}
                       >
-                        <option value="">Vaelg emne...</option>
+                        <option value="">Vælg emne...</option>
                         <option value="bestilling">Bestilling</option>
                         <option value="levering">Levering</option>
                         <option value="produkter">Produkter</option>
@@ -241,7 +241,7 @@ export default function Contact() {
                   Kontaktoplysninger
                 </p>
                 <h2 className="font-display text-3xl lg:text-4xl font-bold text-foreground mb-10">
-                  Faa fat i os
+                  Få fat i os
                 </h2>
 
                 <div className="space-y-6 mb-12">
@@ -286,7 +286,7 @@ export default function Contact() {
                     Find vej
                   </p>
                   <h3 className="font-display text-2xl font-bold text-foreground mb-6">
-                    Besoeg os i Tylstrup
+                    Besøg os i Tylstrup
                   </h3>
                   <div className="aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden shadow-sm">
                     <iframe
