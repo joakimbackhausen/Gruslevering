@@ -1,19 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Loader2,
-  ArrowLeft,
-  Phone,
-  Mail,
-  Tag,
-  ShoppingCart,
-  Minus,
-  Plus,
-  Check,
-  Truck,
-  Package,
-} from "lucide-react";
+import { Loader2, Minus, Plus, Check, ChevronRight, Layers } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
@@ -37,9 +25,13 @@ export default function ProductDetail() {
   const params = useParams<{ id: string }>();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
+  const [selectedVariants, setSelectedVariants] = useState<
+    Record<string, string>
+  >({});
   const [addedToCart, setAddedToCart] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(true);
   const { addItem } = useCart();
+  const relatedScrollRef = useRef<HTMLDivElement>(null);
 
   const {
     data: product,
@@ -55,7 +47,6 @@ export default function ProductDetail() {
     enabled: !!params.id,
   });
 
-  // Fetch related products from same category
   const { data: allProducts = [] } = useQuery<Product[]>({
     queryKey: ["/api/products"],
     queryFn: async () => {
@@ -68,11 +59,12 @@ export default function ProductDetail() {
   const relatedProducts = useMemo(() => {
     if (!product) return [];
     return allProducts
-      .filter((p) => p.categorySlug === product.categorySlug && p.id !== product.id)
+      .filter(
+        (p) => p.categorySlug === product.categorySlug && p.id !== product.id
+      )
       .slice(0, 4);
   }, [allProducts, product]);
 
-  // Calculate current price based on variant selections
   const currentPrice = useMemo(() => {
     if (!product) return 0;
     let price = product.salePrice ?? product.basePrice;
@@ -84,15 +76,14 @@ export default function ProductDetail() {
     return price;
   }, [product, selectedVariants]);
 
-  // Check if all required variants are selected
   const allVariantsSelected = useMemo(() => {
     if (!product?.variants || product.variants.length === 0) return true;
     return product.variants.every((group) => selectedVariants[group.label]);
   }, [product, selectedVariants]);
 
-  // Get tiered price for current quantity
   const tieredPrice = useMemo((): number | null => {
-    if (!product?.tieredPricing || product.tieredPricing.length === 0) return null;
+    if (!product?.tieredPricing || product.tieredPricing.length === 0)
+      return null;
     const tier = product.tieredPricing.find(
       (t) => quantity >= t.minQty && (t.maxQty === null || quantity <= t.maxQty)
     );
@@ -102,16 +93,38 @@ export default function ProductDetail() {
   const effectivePrice = tieredPrice ?? currentPrice;
   const totalPrice = effectivePrice * quantity;
 
-  // Reset image index when product changes
+  // Lowest variant price for "Fra X kr"
+  const lowestPrice = useMemo(() => {
+    if (!product) return 0;
+    const base = product.salePrice ?? product.basePrice;
+    if (!product.variants || product.variants.length === 0) return base;
+    let minAdd = 0;
+    for (const group of product.variants) {
+      const minOption = group.options.reduce(
+        (min, o) => (o.priceDiff < min ? o.priceDiff : min),
+        Infinity
+      );
+      if (minOption !== Infinity) minAdd += minOption;
+    }
+    return base + minAdd;
+  }, [product]);
+
   useEffect(() => {
     setCurrentImageIndex(0);
     setSelectedVariants({});
     setQuantity(1);
   }, [params.id]);
 
+  const handleImageSwitch = (index: number) => {
+    if (index === currentImageIndex) return;
+    setImageLoaded(false);
+    setCurrentImageIndex(index);
+  };
+
   const handleAddToCart = () => {
     if (!product) return;
-    if (product.variants && product.variants.length > 0 && !allVariantsSelected) return;
+    if (product.variants && product.variants.length > 0 && !allVariantsSelected)
+      return;
 
     const variantString = Object.values(selectedVariants).join(" / ");
     addItem({
@@ -121,7 +134,10 @@ export default function ProductDetail() {
       image: product.image,
       sku: product.sku,
       variant: variantString || undefined,
-      variantSelections: Object.keys(selectedVariants).length > 0 ? selectedVariants : undefined,
+      variantSelections:
+        Object.keys(selectedVariants).length > 0
+          ? selectedVariants
+          : undefined,
       unit: product.unit,
       tieredPricing: product.tieredPricing,
     });
@@ -130,34 +146,37 @@ export default function ProductDetail() {
     setTimeout(() => setAddedToCart(false), 2000);
   };
 
+  // ---------- Loading state ----------
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
+      <div className="min-h-screen flex flex-col bg-[var(--grus-warm)]">
         <Header />
         <main className="flex-1 flex items-center justify-center pt-20 lg:pt-[124px]">
-          <Loader2 className="w-10 h-10 animate-spin text-[#E30613]" />
+          <Loader2 className="w-8 h-8 animate-spin text-[var(--grus-dark)]" />
         </main>
         <Footer />
       </div>
     );
   }
 
+  // ---------- Error / Not found ----------
   if (error || !product) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
+      <div className="min-h-screen flex flex-col bg-[var(--grus-warm)]">
         <Header />
         <main
-          className="flex-1 flex flex-col items-center justify-center gap-4"
+          className="flex-1 flex flex-col items-center justify-center gap-6"
           style={{ paddingTop: "var(--header-h, 124px)" }}
         >
-          <p className="text-xl text-gray-500">
-            {error instanceof Error ? error.message : "Produktet blev ikke fundet"}
+          <p className="text-lg text-stone-500 font-display">
+            {error instanceof Error
+              ? error.message
+              : "Produktet blev ikke fundet"}
           </p>
           <Link
             href="/shop"
-            className="inline-flex items-center gap-2 text-[#1a1a1a] font-medium hover:underline"
+            className="text-xs uppercase tracking-[0.15em] text-stone-400 hover:text-[var(--grus-dark)] transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
             Tilbage til shop
           </Link>
         </main>
@@ -170,66 +189,65 @@ export default function ProductDetail() {
   const hasVariants = !!(product.variants && product.variants.length > 0);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
+    <div className="min-h-screen flex flex-col bg-[var(--grus-warm)]">
       <Header />
 
-      {/* Fixed breadcrumb bar */}
-      <div
-        className="fixed left-0 right-0 z-[45] bg-white"
-        style={{
-          top: "var(--header-h, 124px)",
-          borderTop: "0.7px solid #e5e7eb",
-          borderBottom: "0.7px solid #e5e7eb",
-        }}
+      <main
+        className="flex-1"
+        style={{ paddingTop: "var(--header-h, 124px)" }}
       >
-        <div className="max-w-[1224px] mx-auto px-5 sm:px-8 py-3">
-          <nav className="flex items-center gap-2 text-[14px] text-gray-500">
-            <Link href="/" className="hover:text-[#1a1a1a] transition-colors">
+        {/* Breadcrumbs */}
+        <div className="max-w-[1320px] mx-auto px-5 sm:px-8 pt-8 pb-2">
+          <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-stone-400">
+            <Link
+              href="/"
+              className="hover:text-[var(--grus-dark)] transition-colors"
+            >
               Forside
             </Link>
-            <span>/</span>
-            <Link href="/shop" className="hover:text-[#1a1a1a] transition-colors">
+            <ChevronRight className="w-3 h-3" />
+            <Link
+              href="/shop"
+              className="hover:text-[var(--grus-dark)] transition-colors"
+            >
               Shop
             </Link>
             {product.category && (
               <>
-                <span>/</span>
+                <ChevronRight className="w-3 h-3" />
                 <Link
                   href={`/shop/${product.categorySlug}`}
-                  className="hover:text-[#1a1a1a] transition-colors"
+                  className="hover:text-[var(--grus-dark)] transition-colors"
                 >
                   {product.category}
                 </Link>
               </>
             )}
-            <span>/</span>
-            <span className="text-[#1a1a1a] font-medium truncate max-w-[200px]">
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-stone-600 truncate max-w-[200px]">
               {product.title}
             </span>
           </nav>
         </div>
-      </div>
 
-      <main
-        className="flex-1"
-        style={{ paddingTop: "calc(var(--header-h, 124px) + 48px)" }}
-      >
-        <div className="max-w-[1224px] mx-auto px-5 sm:px-8 py-8 lg:py-12">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* LEFT: Image Gallery */}
+        {/* Two-column layout */}
+        <div className="max-w-[1320px] mx-auto px-5 sm:px-8 py-8 lg:py-12">
+          <div className="grid lg:grid-cols-[55fr_45fr] gap-8 lg:gap-16">
+            {/* ====================== LEFT: Image Gallery ====================== */}
             <div className="min-w-0">
               {/* Main image */}
-              <div className="relative w-full aspect-square bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group">
+              <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden bg-[var(--grus-warm)] border border-stone-200/60">
                 {images.length > 0 && images[0] ? (
                   <img
                     key={currentImageIndex}
                     src={images[currentImageIndex]}
                     alt={product.title}
-                    className="w-full h-full object-cover transition-opacity duration-300 animate-in fade-in"
-                    style={{ animationDuration: "300ms" }}
+                    onLoad={() => setImageLoaded(true)}
+                    className="w-full h-full object-cover transition-opacity duration-500 ease-out"
+                    style={{ opacity: imageLoaded ? 1 : 0 }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  <div className="w-full h-full flex items-center justify-center text-stone-300 text-sm">
                     Intet billede
                   </div>
                 )}
@@ -237,15 +255,15 @@ export default function ProductDetail() {
 
               {/* Thumbnails */}
               {images.length > 1 && (
-                <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
                   {images.map((src, index) => (
                     <button
                       key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden border-2 transition-all ${
+                      onClick={() => handleImageSwitch(index)}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 ${
                         index === currentImageIndex
-                          ? "border-[#16a34a] shadow-md"
-                          : "border-transparent opacity-70 hover:opacity-100"
+                          ? "ring-2 ring-[var(--grus-dark)] ring-offset-2"
+                          : "opacity-60 hover:opacity-100"
                       }`}
                     >
                       <img
@@ -259,68 +277,78 @@ export default function ProductDetail() {
               )}
             </div>
 
-            {/* RIGHT: Product Info */}
-            <div className="space-y-5">
-              {/* Category badge */}
+            {/* ====================== RIGHT: Product Info ====================== */}
+            <div className="lg:sticky lg:top-32 lg:self-start">
+              {/* Editorial divider */}
+              <div className="w-8 h-px bg-stone-300 mb-4" />
+
+              {/* Category */}
               {product.category && (
                 <Link href={`/shop/${product.categorySlug}`}>
-                  <span className="inline-flex items-center gap-1.5 bg-[#16a34a] text-white text-[12px] font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
+                  <span className="text-xs uppercase tracking-[0.15em] text-stone-400 hover:text-[var(--grus-dark)] transition-colors">
                     {product.category}
                   </span>
                 </Link>
               )}
 
               {/* Title */}
-              <h1 className="text-[26px] sm:text-[32px] font-bold text-[#1a1a1a] leading-tight">
+              <h1 className="font-display text-3xl lg:text-4xl font-semibold tracking-tight text-[var(--grus-dark)] mt-2 leading-[1.15]">
                 {product.title}
               </h1>
 
               {/* SKU */}
               {product.sku && (
-                <p className="text-[13px] text-gray-400">SKU: {product.sku}</p>
+                <p className="text-xs text-stone-400 mt-1">
+                  SKU: {product.sku}
+                </p>
               )}
 
-              {/* Price section */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              {/* Price area */}
+              <div className="mt-6">
                 {hasVariants && !allVariantsSelected ? (
-                  <div className="text-[28px] font-bold text-[#1a1a1a]">
-                    Fra {formatPrice(product.salePrice ?? product.basePrice)} {product.currency || "DKK"}
+                  <div className="text-2xl font-display font-bold text-[var(--grus-dark)]">
+                    Fra {formatPrice(lowestPrice)} kr
                   </div>
                 ) : (
                   <div>
-                    {product.salePrice && product.salePrice < product.basePrice ? (
+                    {product.salePrice &&
+                    product.salePrice < product.basePrice ? (
                       <div className="flex items-baseline gap-3">
-                        <span className="text-[32px] font-bold text-[#16a34a]">
-                          {formatPrice(effectivePrice)} {product.currency || "DKK"}
+                        <span className="text-2xl font-display font-bold text-[var(--grus-accent)]">
+                          {formatPrice(effectivePrice)} kr
                         </span>
-                        <span className="text-[18px] text-gray-400 line-through">
-                          {formatPrice(product.basePrice)} {product.currency || "DKK"}
+                        <span className="text-lg line-through text-stone-400">
+                          {formatPrice(product.basePrice)} kr
                         </span>
                       </div>
                     ) : (
-                      <div className="text-[32px] font-bold text-[#16a34a]">
-                        {formatPrice(effectivePrice)} {product.currency || "DKK"}
+                      <div className="text-2xl font-display font-bold text-[var(--grus-dark)]">
+                        {formatPrice(effectivePrice)} kr
                       </div>
                     )}
                   </div>
                 )}
                 {product.deliveryIncluded && (
-                  <p className="text-[13px] text-gray-500 mt-1">Inkl. levering</p>
+                  <p className="text-xs text-stone-400 mt-1.5">
+                    Inkl. fri levering
+                  </p>
                 )}
               </div>
 
-              {/* Variant selectors - visual grid buttons */}
+              {/* Variant selectors */}
               {hasVariants && (
-                <div className="space-y-4">
+                <div className="mt-8 space-y-6">
                   {product.variants!.map((group) =>
                     group.options.length > 0 ? (
                       <div key={group.label}>
-                        <label className="block text-[14px] font-semibold text-[#1a1a1a] mb-2">
+                        <label className="block text-xs uppercase tracking-[0.15em] font-medium text-[var(--grus-dark)] mb-3">
                           {group.label}
                         </label>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {group.options.map((opt) => {
-                            const isSelected = selectedVariants[group.label] === opt.name;
+                            const isSelected =
+                              selectedVariants[group.label] === opt.name;
+                            const isOOS = !opt.inStock;
                             return (
                               <button
                                 key={opt.name}
@@ -330,19 +358,20 @@ export default function ProductDetail() {
                                     [group.label]: opt.name,
                                   }))
                                 }
-                                disabled={!opt.inStock}
-                                className={`px-4 py-2.5 rounded-xl text-[14px] font-medium border-2 transition-all ${
+                                disabled={isOOS}
+                                className={`min-w-[100px] py-3 px-5 rounded-lg border text-sm font-medium text-center transition-all duration-150 ${
                                   isSelected
-                                    ? "border-[#16a34a] bg-[#16a34a]/5 text-[#16a34a]"
-                                    : opt.inStock
-                                      ? "border-gray-200 bg-white text-[#1a1a1a] hover:border-gray-300"
-                                      : "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
+                                    ? "border-[var(--grus-dark)] bg-[var(--grus-dark)] text-white"
+                                    : isOOS
+                                      ? "border-stone-200 bg-white text-stone-300 opacity-40 line-through cursor-not-allowed"
+                                      : "border-stone-200 bg-white text-[var(--grus-dark)] hover:border-stone-400"
                                 }`}
                               >
-                                {opt.name}
-                                {opt.priceDiff !== 0 && (
-                                  <span className="ml-1 text-[12px] text-gray-400">
-                                    ({opt.priceDiff > 0 ? "+" : ""}{formatPriceShort(opt.priceDiff)} kr)
+                                <span>{opt.name}</span>
+                                {opt.priceDiff !== 0 && !isOOS && (
+                                  <span className="block text-[11px] mt-0.5 opacity-60">
+                                    {opt.priceDiff > 0 ? "+" : ""}
+                                    {formatPriceShort(opt.priceDiff)} kr
                                   </span>
                                 )}
                               </button>
@@ -355,196 +384,193 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Tiered pricing table */}
+              {/* Tiered pricing */}
               {product.tieredPricing && product.tieredPricing.length > 1 && (
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="text-[14px] font-semibold text-[#1a1a1a] mb-3">
-                    Kob flere, spar mere
-                  </h3>
-                  <table className="w-full text-[14px]">
-                    <thead>
-                      <tr className="text-gray-500 border-b border-gray-100">
-                        <th className="text-left pb-2 font-medium">Antal</th>
-                        <th className="text-right pb-2 font-medium">Pris pr. stk</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {product.tieredPricing.map((tier: TieredPrice, idx: number) => {
+                <div className="mt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Layers className="w-3.5 h-3.5 text-stone-400" />
+                    <span className="text-xs uppercase tracking-[0.15em] font-medium text-[var(--grus-dark)]">
+                      Maengderabat
+                    </span>
+                  </div>
+                  <div className="border border-stone-200/80 rounded-lg overflow-hidden">
+                    {/* Table header */}
+                    <div className="grid grid-cols-3 text-[11px] uppercase tracking-[0.12em] text-stone-400 px-4 py-2.5 border-b border-stone-100 bg-white/50">
+                      <span>Antal</span>
+                      <span className="text-right">Pris pr. stk</span>
+                      <span className="text-right">Rabat</span>
+                    </div>
+                    {/* Rows */}
+                    {product.tieredPricing.map(
+                      (tier: TieredPrice, idx: number) => {
                         const isActive =
                           quantity >= tier.minQty &&
                           (tier.maxQty === null || quantity <= tier.maxQty);
+                        const basePrice =
+                          product.salePrice ?? product.basePrice;
+                        const savingsPercent =
+                          basePrice > 0
+                            ? Math.round(
+                                ((basePrice - tier.price) / basePrice) * 100
+                              )
+                            : 0;
                         return (
-                          <tr
+                          <div
                             key={idx}
-                            className={`border-b border-gray-50 last:border-0 transition-colors ${
-                              isActive ? "bg-[#16a34a]/5" : ""
+                            className={`grid grid-cols-3 px-4 py-3 text-sm transition-colors border-b border-stone-50 last:border-0 ${
+                              isActive
+                                ? "bg-[var(--grus-green)]/5"
+                                : "bg-white"
                             }`}
                           >
-                            <td className={`py-2 ${isActive ? "font-semibold text-[#16a34a]" : "text-[#1a1a1a]"}`}>
+                            <span
+                              className={
+                                isActive
+                                  ? "font-semibold text-[var(--grus-dark)]"
+                                  : "text-stone-600"
+                              }
+                            >
                               {tier.maxQty === null
                                 ? `${tier.minQty}+`
                                 : tier.minQty === tier.maxQty
                                   ? `${tier.minQty}`
-                                  : `${tier.minQty}-${tier.maxQty}`}
-                            </td>
-                            <td className={`py-2 text-right ${isActive ? "font-semibold text-[#16a34a]" : "text-[#1a1a1a]"}`}>
+                                  : `${tier.minQty}\u2013${tier.maxQty}`}
+                            </span>
+                            <span
+                              className={`text-right ${isActive ? "font-semibold text-[var(--grus-dark)]" : "text-stone-600"}`}
+                            >
                               {formatPrice(tier.price)} kr
-                            </td>
-                          </tr>
+                            </span>
+                            <span
+                              className={`text-right ${savingsPercent > 0 ? "text-[var(--grus-green)]" : "text-stone-300"}`}
+                            >
+                              {savingsPercent > 0
+                                ? `\u2212${savingsPercent}%`
+                                : "\u2014"}
+                            </span>
+                          </div>
                         );
-                      })}
-                    </tbody>
-                  </table>
+                      }
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* Quantity selector */}
-              <div className="flex items-center gap-3">
-                <span className="text-[14px] font-semibold text-[#1a1a1a]">Antal:</span>
-                <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
+              {/* Quantity + Add to cart */}
+              <div className="mt-8 space-y-3">
+                {/* Quantity selector */}
+                <div className="flex items-center border border-stone-200 rounded-lg overflow-hidden w-fit">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    className="w-11 h-11 flex items-center justify-center hover:bg-stone-50 transition-colors text-stone-500"
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="w-3.5 h-3.5" />
                   </button>
                   <input
                     type="number"
                     min={1}
                     value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-14 h-10 text-center text-[15px] font-semibold border-x border-gray-200 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    onChange={(e) =>
+                      setQuantity(Math.max(1, parseInt(e.target.value) || 1))
+                    }
+                    className="w-14 h-11 text-center text-sm font-medium border-x border-stone-200 focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     onClick={() => setQuantity((q) => q + 1)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    className="w-11 h-11 flex items-center justify-center hover:bg-stone-50 transition-colors text-stone-500"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                   </button>
                 </div>
+
+                {/* Add to cart button */}
+                <button
+                  onClick={handleAddToCart}
+                  disabled={hasVariants && !allVariantsSelected}
+                  className={`w-full py-4 rounded-xl font-display text-sm uppercase tracking-[0.15em] transition-all duration-200 ${
+                    addedToCart
+                      ? "bg-[var(--grus-green)] text-white"
+                      : hasVariants && !allVariantsSelected
+                        ? "bg-stone-200 text-stone-400 cursor-not-allowed"
+                        : "bg-[var(--grus-dark)] text-white hover:bg-[var(--grus-green)]"
+                  }`}
+                >
+                  {addedToCart ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Check className="w-4 h-4" />
+                      Tilfojet til kurv
+                    </span>
+                  ) : hasVariants && !allVariantsSelected ? (
+                    "Vaelg stoerrelse"
+                  ) : (
+                    `Laeg i kurv \u2014 ${formatPrice(totalPrice)} kr`
+                  )}
+                </button>
               </div>
 
-              {/* Add to cart button */}
-              <button
-                onClick={handleAddToCart}
-                disabled={hasVariants && !allVariantsSelected}
-                className={`w-full inline-flex items-center justify-center gap-2 text-white text-[16px] font-semibold px-6 py-4 rounded-full transition-all ${
-                  addedToCart
-                    ? "bg-[#16a34a]"
-                    : hasVariants && !allVariantsSelected
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-[#16a34a] hover:bg-[#15803d] shadow-lg shadow-green-500/20 hover:shadow-green-500/30"
-                }`}
-              >
-                {addedToCart ? (
-                  <>
-                    <Check className="w-5 h-5" />
-                    Tilfojet!
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-5 h-5" />
-                    {hasVariants && !allVariantsSelected
-                      ? "Vaelg variant"
-                      : `Laeg i kurv \u2014 ${formatPrice(totalPrice)} kr`}
-                  </>
-                )}
-              </button>
-
-              {/* Delivery info cards */}
+              {/* Delivery info */}
               {product.deliveryIncluded && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3.5">
-                    <Truck className="w-5 h-5 text-[#16a34a] flex-shrink-0" />
-                    <span className="text-[13px] text-[#1a1a1a] font-medium">
-                      Fri levering i hele Danmark
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3.5">
-                    <Package className="w-5 h-5 text-[#16a34a] flex-shrink-0" />
-                    <span className="text-[13px] text-[#1a1a1a] font-medium">
-                      Leveres i bigbags
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Contact card */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h2 className="font-semibold text-[15px] text-[#1a1a1a] mb-4">
-                  Har du sporgsmal til dette produkt?
-                </h2>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <a href="tel:+4521479746" className="flex-1">
-                    <button className="w-full inline-flex items-center justify-center gap-2 bg-[#E30613] text-white text-[14px] font-semibold px-6 py-3 rounded-full hover:bg-[#C00511] transition-colors">
-                      <Phone className="w-4 h-4" />
-                      Ring: +45 21 47 97 46
-                    </button>
-                  </a>
-                  <a
-                    href={`mailto:mk@impetu.dk?subject=Foresporgsel: ${product.title} (SKU: ${product.sku})&body=Hej,%0D%0A%0D%0AJeg er interesseret i folgende produkt:%0D%0A%0D%0A${product.title}%0D%0ASKU: ${product.sku}%0D%0APris: ${formatPrice(effectivePrice)} ${product.currency || "DKK"}%0D%0A%0D%0AMed venlig hilsen`}
-                    className="flex-1"
-                  >
-                    <button className="w-full inline-flex items-center justify-center gap-2 border-2 border-gray-200 text-[#1a1a1a] text-[14px] font-semibold px-6 py-3 rounded-full hover:bg-gray-50 transition-colors">
-                      <Mail className="w-4 h-4" />
-                      mk@impetu.dk
-                    </button>
-                  </a>
-                </div>
-                <p className="text-[13px] text-gray-400 mt-4 text-center">
-                  Kontakt: Mads Kroon
+                <p className="mt-6 text-sm text-stone-400">
+                  Fri levering i hele Danmark &bull; Typisk 3-5 hverdage
                 </p>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Description Section */}
+          {/* ====================== Description ====================== */}
           {product.description && (
-            <div className="mt-10 lg:mt-14">
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 lg:p-8">
-                <h2 className="font-semibold text-[18px] text-[#1a1a1a] mb-4">
-                  Beskrivelse
-                </h2>
-                <div
-                  className="prose prose-sm prose-gray max-w-none text-[15px] text-gray-600 leading-relaxed [&_br]:my-1"
-                  dangerouslySetInnerHTML={{
-                    __html: product.description
-                      .replace(/&lt;/g, "<")
-                      .replace(/&gt;/g, ">")
-                      .replace(/<br\s*\/?>/gi, "<br />"),
-                  }}
-                />
-              </div>
+            <div className="mt-16 pt-16 border-t border-stone-200/60">
+              <div className="w-8 h-px bg-stone-300 mb-4" />
+              <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--grus-dark)] mb-6">
+                Beskrivelse
+              </h2>
+              <div
+                className="prose prose-stone max-w-3xl text-[15px] text-stone-600 leading-relaxed [&_br]:my-1 prose-headings:font-display prose-headings:text-[var(--grus-dark)]"
+                dangerouslySetInnerHTML={{
+                  __html: product.description
+                    .replace(/&lt;/g, "<")
+                    .replace(/&gt;/g, ">")
+                    .replace(/<br\s*\/?>/gi, "<br />"),
+                }}
+              />
             </div>
           )}
 
-          {/* Related Products */}
+          {/* ====================== Related Products ====================== */}
           {relatedProducts.length > 0 && (
-            <div className="mt-10 lg:mt-14">
-              <h2 className="font-bold text-[22px] text-[#1a1a1a] mb-6">
-                Relaterede produkter
+            <div className="mt-16 pt-16 border-t border-stone-200/60">
+              <div className="w-8 h-px bg-stone-300 mb-4" />
+              <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--grus-dark)] mb-8">
+                Andre produkter du maaske kan lide
               </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              <div
+                ref={relatedScrollRef}
+                className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 overflow-x-auto lg:overflow-visible snap-x snap-mandatory lg:snap-none"
+                style={{
+                  gridAutoFlow: "column",
+                  gridAutoColumns: "minmax(160px, 1fr)",
+                }}
+              >
                 {relatedProducts.map((rp) => (
                   <Link key={rp.id} href={`/produkt/${rp.slug || rp.id}`}>
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow group cursor-pointer">
-                      <div className="aspect-square bg-gray-100 overflow-hidden">
+                    <div className="snap-start bg-white rounded-2xl border border-stone-200/60 overflow-hidden hover:shadow-lg hover:shadow-stone-200/50 transition-all duration-300 group cursor-pointer">
+                      <div className="aspect-[4/5] bg-[var(--grus-warm)] overflow-hidden">
                         <img
                           src={rp.image}
                           alt={rp.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
                         />
                       </div>
-                      <div className="p-4">
+                      <div className="p-4 lg:p-5">
                         {rp.category && (
-                          <span className="text-[11px] font-semibold text-[#16a34a] uppercase tracking-wide">
+                          <span className="text-[10px] uppercase tracking-[0.15em] text-stone-400">
                             {rp.category}
                           </span>
                         )}
-                        <h3 className="text-[14px] font-semibold text-[#1a1a1a] mt-1 line-clamp-2 leading-snug">
+                        <h3 className="text-sm font-medium text-[var(--grus-dark)] mt-1 line-clamp-2 leading-snug">
                           {rp.title}
                         </h3>
-                        <div className="mt-2 text-[16px] font-bold text-[#1a1a1a]">
+                        <div className="mt-2 text-sm font-display font-semibold text-[var(--grus-dark)]">
                           {formatPrice(rp.salePrice ?? rp.basePrice)} kr
                         </div>
                       </div>
