@@ -173,7 +173,7 @@ function ProductCard({ product }: { product: Product }) {
             onClick={handleAddToCart}
             className="w-full bg-[var(--grus-green)] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--grus-green-hover)] transition-colors cursor-pointer"
           >
-            Laeg i kurv
+            Læg i kurv
           </button>
         )}
       </div>
@@ -187,7 +187,7 @@ function ProductCard({ product }: { product: Product }) {
 
 export default function Home() {
   useEffect(() => {
-    document.title = 'Gruslevering.dk - Grus, sand & sten leveret til doren';
+    document.title = 'Gruslevering.dk - Grus, sand & sten leveret til døren';
   }, []);
 
   const { data: products = [], isLoading: loadingProducts } = useQuery<Product[]>({
@@ -238,12 +238,12 @@ export default function Home() {
 
               {/* Heading */}
               <h1 className="font-display font-bold text-white text-3xl sm:text-4xl lg:text-5xl leading-tight mb-4 max-w-lg">
-                Grus, sand & sten leveret til doren
+                Grus, sand & sten leveret til døren
               </h1>
 
               {/* Subtext */}
               <p className="text-white/80 text-base lg:text-lg mb-8 max-w-md">
-                Bestil materialer online og fa leveret direkte til din adresse i hele Danmark
+                Bestil materialer online og få leveret direkte til din adresse i hele Danmark
               </p>
 
               {/* CTAs */}
@@ -260,7 +260,7 @@ export default function Home() {
                   className="inline-flex items-center gap-2 bg-white/15 backdrop-blur text-white border border-white/30 font-semibold px-6 py-3 rounded-lg hover:bg-white/25 transition-all"
                 >
                   <Calculator className="w-4 h-4" />
-                  Beregn maengde
+                  Beregn mængde
                 </Link>
               </div>
             </div>
@@ -353,7 +353,7 @@ export default function Home() {
             <div className="flex items-end justify-between mb-8">
               <div>
                 <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl">
-                  Populaere produkter
+                  Populære produkter
                 </h2>
                 <div className="w-12 h-0.5 bg-[var(--grus-green)] mt-2" />
               </div>
@@ -416,14 +416,14 @@ export default function Home() {
                   Beregn hvor meget du har brug for
                 </h2>
                 <p className="text-gray-600 text-sm sm:text-base max-w-lg mb-6">
-                  Brug vores volumenberegner til at finde ud af praecis hvor mange bigbags du skal
-                  bestille. Indtast dine mal og fa svar med det samme.
+                  Brug vores volumenberegner til at finde ud af præcis hvor mange bigbags du skal
+                  bestille. Indtast dine mål og få svar med det samme.
                 </p>
                 <Link
                   href="/volumenberegner"
                   className="inline-flex items-center gap-2 bg-[var(--grus-green)] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[var(--grus-green-hover)] transition-colors"
                 >
-                  Prov beregneren
+                  Prøv beregneren
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -445,7 +445,7 @@ export default function Home() {
           <Reveal>
             <div className="text-center mb-10">
               <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl">
-                Hvorfor vaelge Gruslevering.dk?
+                Hvorfor vælge Gruslevering.dk?
               </h2>
               <div className="w-12 h-0.5 bg-[var(--grus-green)] mt-2 mx-auto" />
             </div>
@@ -457,19 +457,19 @@ export default function Home() {
                 icon: CheckCircle,
                 title: 'Nem bestilling',
                 description:
-                  'Bestil materialer online pa fa minutter. Vaelg produkt, maengde og leveringsadresse - sa klarer vi resten.',
+                  'Bestil materialer online på få minutter. Vælg produkt, mængde og leveringsadresse - så klarer vi resten.',
               },
               {
                 icon: Leaf,
                 title: 'Kvalitetsmaterialer',
                 description:
-                  'Vi leverer kun materialer af hojeste kvalitet fra palidelige danske leverandorer.',
+                  'Vi leverer kun materialer af højeste kvalitet fra pålidelige danske leverandører.',
               },
               {
                 icon: HeartHandshake,
                 title: 'Personlig service',
                 description:
-                  'Har du sporgsmal? Vores team er altid klar til at hjaelpe dig med at finde det rigtige produkt.',
+                  'Har du spørgsmål? Vores team er altid klar til at hjælpe dig med at finde det rigtige produkt.',
               },
             ].map((item, i) => (
               <Reveal key={item.title} delay={i * 80}>

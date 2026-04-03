@@ -543,12 +543,12 @@ export default function ProductDetail() {
                   {addedToCart ? (
                     <span className="inline-flex items-center justify-center gap-2">
                       <Check className="w-5 h-5" />
-                      Tilfojet til kurv
+                      Tilføjet til kurv
                     </span>
                   ) : hasVariants && !allVariantsSelected ? (
-                    'Vaelg variant'
+                    'Vælg variant'
                   ) : (
-                    `Laeg i kurv \u2014 ${formatPrice(totalPrice)}`
+                    `Læg i kurv \u2014 ${formatPrice(totalPrice)}`
                   )}
                 </button>
               </div>

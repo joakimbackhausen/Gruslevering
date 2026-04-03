@@ -171,13 +171,13 @@ export default function Header() {
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Sog efter produkter..."
+                  placeholder="Søg efter produkter..."
                   className="w-full h-11 pl-4 pr-4 rounded-l-lg border border-r-0 border-[var(--grus-border)] text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] focus:ring-1 focus:ring-[var(--grus-green)] transition-all"
                 />
                 <button
                   type="submit"
                   className="flex items-center justify-center w-12 h-11 bg-[var(--grus-green)] hover:bg-[var(--grus-green-hover)] text-white rounded-r-lg transition-colors shrink-0"
-                  aria-label="Sog"
+                  aria-label="Søg"
                 >
                   <Search className="w-5 h-5" />
                 </button>
@@ -208,7 +208,7 @@ export default function Header() {
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
                 className="lg:hidden p-2 text-[var(--grus-dark)] hover:text-[var(--grus-green)] transition-colors"
-                aria-label="Sog"
+                aria-label="Søg"
               >
                 <Search className="w-5 h-5" />
               </button>
@@ -242,14 +242,14 @@ export default function Header() {
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Sog efter produkter..."
+                placeholder="Søg efter produkter..."
                 autoFocus
                 className="flex-1 h-10 pl-4 pr-4 rounded-l-lg border border-r-0 border-[var(--grus-border)] bg-gray-50 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] transition-all"
               />
               <button
                 type="submit"
                 className="flex items-center justify-center w-11 h-10 bg-[var(--grus-green)] text-white rounded-r-lg"
-                aria-label="Sog"
+                aria-label="Søg"
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -351,13 +351,13 @@ export default function Header() {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Sog efter produkter..."
+              placeholder="Søg efter produkter..."
               className="flex-1 h-10 pl-4 pr-4 rounded-l-lg border border-r-0 border-[var(--grus-border)] bg-gray-50 text-sm placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] transition-colors"
             />
             <button
               type="submit"
               className="flex items-center justify-center w-10 h-10 bg-[var(--grus-green)] text-white rounded-r-lg"
-              aria-label="Sog"
+              aria-label="Søg"
             >
               <Search className="w-4 h-4" />
             </button>
