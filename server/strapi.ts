@@ -17,8 +17,8 @@ function decodeEntities(str: string): string {
     .replace(/&#039;/g, "'")
     .replace(/&#8211;/g, '–')
     .replace(/&#8212;/g, '—')
-    .replace(/&#8217;/g, ''')
-    .replace(/&#8230;/g, '…');
+    .replace(/&#8217;/g, "\u2019")
+    .replace(/&#8230;/g, "\u2026");
 }
 
 // ── Interfaces ──
