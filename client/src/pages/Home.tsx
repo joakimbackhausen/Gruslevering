@@ -67,16 +67,16 @@ function Reveal({
 /* ── Gradient placeholders for categories ── */
 
 const categoryGradients = [
-  'linear-gradient(135deg, #2e7d32 0%, #43a047 100%)',
-  'linear-gradient(135deg, #8d6e63 0%, #a1887f 100%)',
-  'linear-gradient(135deg, #78909c 0%, #90a4ae 100%)',
-  'linear-gradient(135deg, #5d8a5e 0%, #81c784 100%)',
-  'linear-gradient(135deg, #a0826d 0%, #bcaaa4 100%)',
-  'linear-gradient(135deg, #546e54 0%, #7da67c 100%)',
-  'linear-gradient(135deg, #6d7e6d 0%, #95a895 100%)',
+  'linear-gradient(135deg, #54765D 0%, #6a8e73 100%)',
+  'linear-gradient(135deg, #8d7e6e 0%, #a89484 100%)',
+  'linear-gradient(135deg, #7a8878 0%, #96a394 100%)',
+  'linear-gradient(135deg, #5d8a66 0%, #7daa86 100%)',
+  'linear-gradient(135deg, #a08a6d 0%, #bcaaa4 100%)',
+  'linear-gradient(135deg, #546e5c 0%, #7da680 100%)',
+  'linear-gradient(135deg, #6d7e70 0%, #95a898 100%)',
   'linear-gradient(135deg, #7e6b5a 0%, #a89484 100%)',
-  'linear-gradient(135deg, #4a6b4a 0%, #6d946c 100%)',
-  'linear-gradient(135deg, #607060 0%, #889888 100%)',
+  'linear-gradient(135deg, #4a6b52 0%, #6d9470 100%)',
+  'linear-gradient(135deg, #607062 0%, #88988a 100%)',
 ];
 
 /* ── Testimonials ── */
@@ -129,7 +129,7 @@ export default function Home() {
   const featuredProducts = products.slice(0, 8);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf8]">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--grus-bg)' }}>
       <Header />
 
       {/* ═══════════════════════════════════════════════════
@@ -140,7 +140,7 @@ export default function Home() {
           <div
             className="relative rounded-xl overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #2e7d32 0%, #1b5e20 40%, #1a2332 100%)',
+              background: 'linear-gradient(135deg, #36332F 0%, #3a4a3d 30%, #54765D 70%, #6a8e73 100%)',
               minHeight: '250px',
             }}
           >
@@ -155,7 +155,7 @@ export default function Home() {
 
             <div className="relative z-10 px-6 sm:px-10 lg:px-14 py-12 sm:py-16 lg:py-20 max-w-2xl">
               {/* Badge */}
-              <span className="inline-flex items-center gap-1.5 bg-white/95 text-[#1a2332] text-xs font-semibold px-3 py-1.5 rounded-full mb-5">
+              <span className="inline-flex items-center gap-1.5 bg-white/95 text-[var(--grus-dark)] text-xs font-semibold px-3 py-1.5 rounded-full mb-5">
                 <Truck className="w-3.5 h-3.5" />
                 Fri levering
               </span>
@@ -176,7 +176,7 @@ export default function Home() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/shop"
-                  className="inline-flex items-center gap-2 bg-white text-[#1a2332] font-semibold px-6 py-3 rounded-lg shadow hover:shadow-md hover:bg-gray-50 transition-all"
+                  className="inline-flex items-center gap-2 bg-white text-[var(--grus-dark)] font-semibold px-6 py-3 rounded-lg shadow hover:shadow-md hover:bg-gray-50 transition-all"
                 >
                   Se produkter
                   <ArrowRight className="w-4 h-4" />
@@ -197,7 +197,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════
           SECTION 2 - USP STRIP
           ═══════════════════════════════════════════════════ */}
-      <section className="bg-white border-y border-gray-100">
+      <section className="bg-white border-y" style={{ borderColor: 'var(--grus-border)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-wrap justify-center sm:justify-between gap-4 sm:gap-2">
             {[
@@ -207,7 +207,7 @@ export default function Home() {
               { icon: Flag, text: 'Dansk kvalitet siden 2008' },
             ].map((usp) => (
               <div key={usp.text} className="flex items-center gap-2 px-2">
-                <usp.icon className="w-4 h-4 text-[#2e7d32] flex-shrink-0" />
+                <usp.icon className="w-4 h-4 text-[var(--grus-green)] flex-shrink-0" />
                 <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
                   {usp.text}
                 </span>
@@ -224,10 +224,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal>
             <div className="mb-8">
-              <h2 className="font-display font-bold text-[#1a2332] text-2xl sm:text-3xl">
+              <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl">
                 Udforsk vores sortiment
               </h2>
-              <div className="w-12 h-1 bg-[#2e7d32] rounded-full mt-3" />
+              <div className="w-12 h-1 bg-[var(--grus-green)] rounded-full mt-3" />
             </div>
           </Reveal>
 
@@ -279,19 +279,19 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════
           SECTION 4 - FEATURED PRODUCTS
           ═══════════════════════════════════════════════════ */}
-      <section className="py-12 lg:py-16 bg-[#f8faf8]">
+      <section className="py-12 lg:py-16" style={{ backgroundColor: 'var(--grus-bg)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal>
             <div className="flex items-end justify-between mb-8">
               <div>
-                <h2 className="font-display font-bold text-[#1a2332] text-2xl sm:text-3xl">
+                <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl">
                   Populaere produkter
                 </h2>
-                <div className="w-12 h-1 bg-[#2e7d32] rounded-full mt-3" />
+                <div className="w-12 h-1 bg-[var(--grus-green)] rounded-full mt-3" />
               </div>
               <Link
                 href="/shop"
-                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-[#2e7d32] hover:text-[#1b5e20] transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-[var(--grus-green)] hover:text-[var(--grus-green-hover)] transition-colors"
               >
                 Se alle
                 <ArrowRight className="w-4 h-4" />
@@ -302,7 +302,7 @@ export default function Home() {
           {loadingProducts ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                <div key={i} className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid var(--grus-border)' }}>
                   <div className="aspect-square skeleton-shimmer" />
                   <div className="p-4 space-y-2">
                     <div className="h-3 w-16 rounded skeleton-shimmer" />
@@ -318,10 +318,11 @@ export default function Home() {
                 <Reveal key={p.id} delay={i * 40}>
                   <Link
                     href={`/produkt/${p.slug || p.id}`}
-                    className="group block bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300"
+                    className="group block bg-white rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-300"
+                    style={{ border: '1px solid var(--grus-border)' }}
                   >
                     {/* Image area */}
-                    <div className="aspect-square bg-gray-50 p-4 flex items-center justify-center overflow-hidden">
+                    <div className="aspect-square p-4 flex items-center justify-center overflow-hidden" style={{ backgroundColor: 'var(--grus-cream)' }}>
                       {p.image ? (
                         <SmartImage
                           src={p.image}
@@ -329,22 +330,22 @@ export default function Home() {
                           className="w-full h-full object-cover rounded-lg group-hover:scale-[1.03] transition-transform duration-500"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gray-100 rounded-lg" />
+                        <div className="w-full h-full rounded-lg" style={{ backgroundColor: 'var(--grus-sand)' }} />
                       )}
                     </div>
 
                     {/* Content area */}
                     <div className="p-4">
-                      <p className="text-[#2e7d32] text-xs font-medium uppercase tracking-wide mb-1">
+                      <p className="text-[var(--grus-green)] text-xs font-medium uppercase tracking-wide mb-1">
                         {p.category}
                       </p>
-                      <h3 className="text-sm font-semibold text-[#1a2332] line-clamp-2 leading-snug mb-2 group-hover:text-[#2e7d32] transition-colors">
+                      <h3 className="text-sm font-semibold text-[var(--grus-dark)] line-clamp-2 leading-snug mb-2 group-hover:text-[var(--grus-green)] transition-colors">
                         {p.title}
                       </h3>
                       <div className="flex items-baseline gap-2">
                         {p.salePrice && p.salePrice < p.basePrice ? (
                           <>
-                            <span className="text-lg font-bold text-[#e65100]">
+                            <span className="text-lg font-bold" style={{ color: 'var(--grus-accent)' }}>
                               {p.variants && p.variants.length > 0 ? 'Fra ' : ''}
                               {formatPrice(p.salePrice)}
                             </span>
@@ -353,15 +354,22 @@ export default function Home() {
                             </span>
                           </>
                         ) : (
-                          <span className="text-lg font-bold text-[#1a2332]">
+                          <span className="text-lg font-bold text-[var(--grus-dark)]">
                             {p.variants && p.variants.length > 0 ? 'Fra ' : ''}
                             {formatPrice(p.basePrice)}
                           </span>
                         )}
                       </div>
                       {p.deliveryIncluded && (
-                        <p className="text-gray-400 text-xs mt-1">inkl. levering</p>
+                        <p className="text-[var(--grus-stone)] text-xs mt-1">inkl. levering</p>
                       )}
+                    </div>
+
+                    {/* Button */}
+                    <div className="px-4 pb-4">
+                      <span className="inline-flex items-center justify-center w-full py-2 rounded-lg text-sm font-medium text-[var(--grus-green)] transition-colors" style={{ backgroundColor: 'var(--grus-green-light)' }}>
+                        Se produkt
+                      </span>
                     </div>
                   </Link>
                 </Reveal>
@@ -374,7 +382,7 @@ export default function Home() {
             <div className="text-center mt-6 sm:hidden">
               <Link
                 href="/shop"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-[#2e7d32]"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--grus-green)]"
               >
                 Se alle produkter
                 <ArrowRight className="w-4 h-4" />
@@ -390,15 +398,15 @@ export default function Home() {
       <section className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <Reveal>
-            <div className="bg-[#e8f5e9] rounded-xl px-6 sm:px-10 py-8 sm:py-10 flex flex-col sm:flex-row items-center gap-6 sm:gap-10">
+            <div className="rounded-xl px-6 sm:px-10 py-8 sm:py-10 flex flex-col sm:flex-row items-center gap-6 sm:gap-10" style={{ backgroundColor: 'var(--grus-green-light)' }}>
               {/* Icon */}
-              <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-[#2e7d32] rounded-2xl flex items-center justify-center">
+              <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-[var(--grus-green)] rounded-2xl flex items-center justify-center">
                 <Calculator className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
 
               {/* Text */}
               <div className="flex-1 text-center sm:text-left">
-                <h2 className="font-display font-bold text-[#1a2332] text-xl sm:text-2xl mb-2">
+                <h2 className="font-display font-bold text-[var(--grus-dark)] text-xl sm:text-2xl mb-2">
                   Beregn hvor meget du har brug for
                 </h2>
                 <p className="text-gray-600 text-sm sm:text-base max-w-lg">
@@ -410,7 +418,7 @@ export default function Home() {
               {/* CTA */}
               <Link
                 href="/volumenberegner"
-                className="flex-shrink-0 inline-flex items-center gap-2 bg-[#2e7d32] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[#1b5e20] transition-colors"
+                className="flex-shrink-0 inline-flex items-center gap-2 bg-[var(--grus-green)] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[var(--grus-green-hover)] transition-colors"
               >
                 Proev beregneren
                 <ArrowRight className="w-4 h-4" />
@@ -427,17 +435,17 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal>
             <div className="text-center mb-10">
-              <h2 className="font-display font-bold text-[#1a2332] text-2xl sm:text-3xl">
+              <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl">
                 Hvad siger vores kunder?
               </h2>
-              <div className="w-12 h-1 bg-[#2e7d32] rounded-full mt-3 mx-auto" />
+              <div className="w-12 h-1 bg-[var(--grus-green)] rounded-full mt-3 mx-auto" />
             </div>
           </Reveal>
 
           <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((t, i) => (
               <Reveal key={t.name} delay={i * 80}>
-                <div className="bg-white border border-gray-100 rounded-xl p-6 hover:shadow-sm transition-shadow">
+                <div className="bg-white rounded-xl p-6 hover:shadow-sm transition-shadow" style={{ border: '1px solid var(--grus-border)' }}>
                   {/* Stars */}
                   <div className="flex gap-0.5 mb-4">
                     {[...Array(t.stars)].map((_, s) => (
@@ -449,13 +457,13 @@ export default function Home() {
                   </div>
 
                   {/* Quote */}
-                  <Quote className="w-5 h-5 text-gray-200 mb-2" />
+                  <Quote className="w-5 h-5 text-[var(--grus-sand)] mb-2" />
                   <p className="text-gray-600 text-sm leading-relaxed mb-4">
                     {t.text}
                   </p>
 
                   {/* Author */}
-                  <p className="text-sm font-semibold text-[#1a2332]">{t.name}</p>
+                  <p className="text-sm font-semibold text-[var(--grus-dark)]">{t.name}</p>
                   <p className="text-xs text-gray-400">{t.location}</p>
                 </div>
               </Reveal>
@@ -467,7 +475,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════
           SECTION 7 - FOOTER CTA
           ═══════════════════════════════════════════════════ */}
-      <section className="bg-[#1a2332] py-16 lg:py-20">
+      <section className="py-16 lg:py-20" style={{ backgroundColor: 'var(--grus-dark)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Reveal>
             <h2 className="font-display font-bold text-white text-2xl sm:text-3xl lg:text-4xl mb-4">
@@ -479,7 +487,7 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-3">
               <Link
                 href="/shop"
-                className="inline-flex items-center gap-2 bg-[#2e7d32] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[#1b5e20] transition-colors"
+                className="inline-flex items-center gap-2 bg-[var(--grus-green)] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[var(--grus-green-hover)] transition-colors"
               >
                 Se produkter
                 <ArrowRight className="w-4 h-4" />

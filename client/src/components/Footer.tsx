@@ -61,9 +61,9 @@ export default function Footer() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {usps.map((usp) => (
               <div key={usp.title} className="flex flex-col items-center text-center gap-2">
-                <usp.icon className="w-6 h-6 text-[#3f9b3f]" />
+                <usp.icon className="w-6 h-6 text-[var(--grus-green)]" />
                 <span className="text-sm font-semibold text-white">{usp.title}</span>
-                <span className="text-sm text-gray-400">{usp.description}</span>
+                <span className="text-sm text-[var(--grus-sand)]/70">{usp.description}</span>
               </div>
             ))}
           </div>
@@ -83,7 +83,7 @@ export default function Footer() {
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                    className="text-sm text-[var(--grus-sand)] hover:text-white transition-colors"
                   >
                     {item.label}
                   </Link>
@@ -102,7 +102,7 @@ export default function Footer() {
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                    className="text-sm text-[var(--grus-sand)] hover:text-white transition-colors"
                   >
                     {item.label}
                   </Link>
@@ -116,10 +116,10 @@ export default function Footer() {
             <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
               Kontakt
             </h4>
-            <ul className="space-y-2.5 text-sm text-gray-400">
+            <ul className="space-y-2.5 text-sm text-[var(--grus-sand)]/70">
               <li className="font-medium text-white/80">Kaervang Materialer ApS</li>
               <li className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-[var(--grus-stone)]" />
                 <span>Tylstrupvej 1<br />9382 Tylstrup</span>
               </li>
               <li>
@@ -127,7 +127,7 @@ export default function Footer() {
                   href="tel:+4572494444"
                   className="flex items-center gap-2 hover:text-white transition-colors"
                 >
-                  <Phone className="w-4 h-4 shrink-0 text-gray-500" />
+                  <Phone className="w-4 h-4 shrink-0 text-[var(--grus-stone)]" />
                   +45 72 49 44 44
                 </a>
               </li>
@@ -136,12 +136,12 @@ export default function Footer() {
                   href="mailto:Info@kaervangmaterialer.dk"
                   className="flex items-center gap-2 hover:text-white transition-colors"
                 >
-                  <Mail className="w-4 h-4 shrink-0 text-gray-500" />
+                  <Mail className="w-4 h-4 shrink-0 text-[var(--grus-stone)]" />
                   Info@kaervangmaterialer.dk
                 </a>
               </li>
               <li className="flex items-center gap-2">
-                <Clock className="w-4 h-4 shrink-0 text-gray-500" />
+                <Clock className="w-4 h-4 shrink-0 text-[var(--grus-stone)]" />
                 Hverdage 8:00 - 16:00
               </li>
             </ul>
@@ -172,23 +172,23 @@ export default function Footer() {
                 <Instagram className="w-4 h-4 text-gray-300" />
               </a>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className="flex items-center gap-2 text-sm text-[var(--grus-sand)]/70">
               <Star className="w-4 h-4 text-[#00b67a] fill-[#00b67a]" />
               <span>Trustpilot</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Se anmeldelser</p>
+            <p className="text-xs text-[var(--grus-stone)] mt-1">Se anmeldelser</p>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-[var(--grus-stone)]">
             &copy; 2025 Kaervang Materialer ApS &middot; CVR 40125391
           </p>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded">Visa</span>
-            <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded">MasterCard</span>
-            <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded">MobilePay</span>
+            <span className="text-xs text-[var(--grus-stone)] bg-white/5 px-2.5 py-1 rounded">Visa</span>
+            <span className="text-xs text-[var(--grus-stone)] bg-white/5 px-2.5 py-1 rounded">MasterCard</span>
+            <span className="text-xs text-[var(--grus-stone)] bg-white/5 px-2.5 py-1 rounded">MobilePay</span>
           </div>
         </div>
       </div>

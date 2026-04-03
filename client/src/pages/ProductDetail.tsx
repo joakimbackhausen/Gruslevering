@@ -40,9 +40,10 @@ function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={productUrl}
-      className="group block bg-white rounded-xl border border-gray-100 overflow-hidden transition-all duration-200 hover:shadow-md hover:border-gray-200"
+      className="group block bg-white rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md"
+      style={{ border: '1px solid var(--grus-border)' }}
     >
-      <div className="relative aspect-square bg-gray-50 p-3">
+      <div className="relative aspect-square p-3" style={{ backgroundColor: 'var(--grus-cream)' }}>
         {product.image ? (
           <img
             src={product.image}
@@ -65,13 +66,13 @@ function ProductCard({ product }: { product: Product }) {
         <span className="text-xs text-[var(--grus-green)] font-medium uppercase tracking-wide">
           {product.category}
         </span>
-        <h3 className="text-sm font-semibold text-gray-900 mt-1 line-clamp-2 leading-snug">
+        <h3 className="text-sm font-semibold text-[var(--grus-dark)] mt-1 line-clamp-2 leading-snug">
           {product.title}
         </h3>
         <div className="mt-2">
           {isOnSale ? (
             <div className="flex items-baseline gap-2">
-              <span className="text-base font-bold text-gray-900">
+              <span className="text-base font-bold text-[var(--grus-dark)]">
                 {formatPrice(product.salePrice!)}
               </span>
               <span className="text-sm text-gray-400 line-through">
@@ -79,7 +80,7 @@ function ProductCard({ product }: { product: Product }) {
               </span>
             </div>
           ) : (
-            <span className="text-base font-bold text-gray-900">
+            <span className="text-base font-bold text-[var(--grus-dark)]">
               {hasVariants ? 'Fra ' : ''}
               {formatPrice(effectivePrice)}
             </span>
@@ -275,7 +276,7 @@ export default function ProductDetail() {
               </>
             )}
             <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-gray-900 font-medium truncate max-w-[200px]">
+            <span className="text-[var(--grus-dark)] font-medium truncate max-w-[200px]">
               {product.title}
             </span>
           </nav>
@@ -287,7 +288,7 @@ export default function ProductDetail() {
             {/* LEFT: Image Gallery */}
             <div className="min-w-0">
               {/* Main image */}
-              <div className="aspect-square bg-gray-50 rounded-xl p-4 overflow-hidden">
+              <div className="aspect-square rounded-xl p-4 overflow-hidden" style={{ backgroundColor: 'var(--grus-cream)' }}>
                 {images.length > 0 && images[0] ? (
                   <img
                     key={currentImageIndex}
@@ -312,7 +313,7 @@ export default function ProductDetail() {
                       className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                         index === currentImageIndex
                           ? 'ring-2 ring-[var(--grus-green)] border-[var(--grus-green)]'
-                          : 'border-gray-200 hover:border-gray-300 opacity-70 hover:opacity-100'
+                          : 'border-[var(--grus-border)] hover:border-gray-300 opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img
@@ -338,7 +339,7 @@ export default function ProductDetail() {
               )}
 
               {/* Title */}
-              <h1 className="font-display text-2xl lg:text-3xl font-bold text-gray-900 mt-3 leading-tight">
+              <h1 className="font-display text-2xl lg:text-3xl font-bold text-[var(--grus-dark)] mt-3 leading-tight">
                 {product.title}
               </h1>
 
@@ -350,14 +351,14 @@ export default function ProductDetail() {
               {/* Price */}
               <div className="mt-4">
                 {hasVariants && !allVariantsSelected ? (
-                  <div className="text-3xl font-bold text-gray-900">
+                  <div className="text-3xl font-bold text-[var(--grus-dark)]">
                     Fra {formatPrice(lowestPrice)}
                   </div>
                 ) : (
                   <div>
                     {isOnSale ? (
                       <div className="flex items-baseline gap-3">
-                        <span className="text-3xl font-bold text-gray-900">
+                        <span className="text-3xl font-bold text-[var(--grus-dark)]">
                           {formatPrice(effectivePrice)}
                         </span>
                         <span className="text-lg line-through text-gray-400">
@@ -365,7 +366,7 @@ export default function ProductDetail() {
                         </span>
                       </div>
                     ) : (
-                      <div className="text-3xl font-bold text-gray-900">
+                      <div className="text-3xl font-bold text-[var(--grus-dark)]">
                         {formatPrice(effectivePrice)}
                       </div>
                     )}
@@ -407,8 +408,8 @@ export default function ProductDetail() {
                                   isSelected
                                     ? 'bg-[var(--grus-green)] text-white border-[var(--grus-green)]'
                                     : isOOS
-                                      ? 'bg-white border-gray-200 text-gray-300 opacity-40 line-through cursor-not-allowed'
-                                      : 'bg-white border-gray-200 text-gray-700 hover:border-[var(--grus-green)]'
+                                      ? 'bg-white border-[var(--grus-border)] text-gray-300 opacity-40 line-through cursor-not-allowed'
+                                      : 'bg-white border-[var(--grus-border)] text-gray-700 hover:border-[var(--grus-green)]'
                                 }`}
                               >
                                 <span>{opt.name}</span>
@@ -433,12 +434,12 @@ export default function ProductDetail() {
                 <div className="mt-6">
                   <div className="flex items-center gap-2 mb-3">
                     <Tag className="w-4 h-4 text-[var(--grus-green)]" />
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold text-[var(--grus-dark)]">
                       Spar ved at kobe flere
                     </span>
                   </div>
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="grid grid-cols-3 text-xs font-medium text-gray-500 uppercase tracking-wide px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+                  <div className="border border-[var(--grus-border)] rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-3 text-xs font-medium text-gray-500 uppercase tracking-wide px-4 py-2.5 bg-gray-50 border-b border-[var(--grus-border)]">
                       <span>Antal</span>
                       <span className="text-right">Pris pr. stk</span>
                       <span className="text-right">Rabat</span>
@@ -474,7 +475,7 @@ export default function ProductDetail() {
                           </span>
                           <span
                             className={`text-right ${
-                              isActive ? 'font-semibold text-gray-900' : 'text-gray-600'
+                              isActive ? 'font-semibold text-[var(--grus-dark)]' : 'text-gray-600'
                             }`}
                           >
                             {formatPriceDecimal(tier.price)} kr
@@ -500,7 +501,7 @@ export default function ProductDetail() {
               {/* Quantity + Add to cart */}
               <div className="mt-6 space-y-3">
                 {/* Quantity selector */}
-                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden w-fit">
+                <div className="flex items-center border border-[var(--grus-border)] rounded-lg overflow-hidden w-fit">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 transition-colors text-gray-500"
@@ -514,7 +515,7 @@ export default function ProductDetail() {
                     onChange={(e) =>
                       setQuantity(Math.max(1, parseInt(e.target.value) || 1))
                     }
-                    className="w-14 h-11 text-center text-sm font-medium border-x border-gray-200 focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-14 h-11 text-center text-sm font-medium border-x border-[var(--grus-border)] focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     onClick={() => setQuantity((q) => q + 1)}
@@ -569,12 +570,12 @@ export default function ProductDetail() {
 
           {/* Description section */}
           {product.description && (
-            <div className="border-t border-gray-200 mt-12 pt-8">
-              <h2 className="font-display text-xl lg:text-2xl font-bold text-gray-900 mb-4">
+            <div className="border-t border-[var(--grus-border)] mt-12 pt-8">
+              <h2 className="font-display text-xl lg:text-2xl font-bold text-[var(--grus-dark)] mb-4">
                 Produktbeskrivelse
               </h2>
               <div
-                className="prose prose-gray max-w-3xl text-sm text-gray-600 leading-relaxed [&_br]:my-1 prose-headings:font-display prose-headings:text-gray-900"
+                className="prose prose-gray max-w-3xl text-sm text-gray-600 leading-relaxed [&_br]:my-1 prose-headings:font-display prose-headings:text-[var(--grus-dark)]"
                 dangerouslySetInnerHTML={{
                   __html: product.description
                     .replace(/&lt;/g, '<')
@@ -587,8 +588,8 @@ export default function ProductDetail() {
 
           {/* Related products */}
           {relatedProducts.length > 0 && (
-            <div className="border-t border-gray-200 mt-12 pt-8">
-              <h2 className="font-display text-xl lg:text-2xl font-bold text-gray-900 mb-6">
+            <div className="border-t border-[var(--grus-border)] mt-12 pt-8">
+              <h2 className="font-display text-xl lg:text-2xl font-bold text-[var(--grus-dark)] mb-6">
                 Andre kunder kobte ogsa
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
