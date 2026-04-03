@@ -1,74 +1,89 @@
 import { Link } from 'wouter';
-import { Phone, Mail, MapPin, Clock } from 'lucide-react';
+import {
+  Truck,
+  Timer,
+  ShieldCheck,
+  Headphones,
+  Phone,
+  Mail,
+  MapPin,
+  Clock,
+  Facebook,
+  Instagram,
+  Star,
+} from 'lucide-react';
+
+const usps = [
+  {
+    icon: Truck,
+    title: 'Fri levering',
+    description: 'Ved ordre over 2.000 kr.',
+  },
+  {
+    icon: Timer,
+    title: 'Hurtig levering',
+    description: 'Levering inden for 1-3 hverdage',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Dansk kvalitet',
+    description: 'Materialer fra danske leverandorer',
+  },
+  {
+    icon: Headphones,
+    title: 'Kundeservice',
+    description: 'Vi er klar til at hjaelpe dig',
+  },
+];
+
+const kundeserviceLinks = [
+  { label: 'FAQ', href: '/kontakt' },
+  { label: 'Leveringsbetingelser', href: '/levering' },
+  { label: 'Returpolitik', href: '/levering' },
+  { label: 'Kontakt os', href: '/kontakt' },
+];
+
+const informationLinks = [
+  { label: 'Om os', href: '/om-os' },
+  { label: 'Volumenberegner', href: '/volumenberegner' },
+  { label: 'Vores materialer', href: '/shop' },
+];
 
 export default function Footer() {
-  const navigation = [
-    { label: 'Shop', href: '/shop' },
-    { label: 'Levering', href: '/levering' },
-    { label: 'Beregner', href: '/volumenberegner' },
-    { label: 'Om os', href: '/om-os' },
-    { label: 'Kontakt', href: '/kontakt' },
-  ];
-
-  const categories = [
-    { label: 'Granit & Sten', href: '/shop/granit-sten' },
-    { label: 'Sand & Grus', href: '/shop/sand-grus' },
-    { label: 'Muld', href: '/shop/muld' },
-    { label: 'Flis', href: '/shop/flis' },
-    { label: 'Braende', href: '/shop/braende' },
-    { label: 'Hus & Have', href: '/shop/hus-have' },
-  ];
-
   return (
     <footer
-      className="relative text-white"
+      className="text-white"
       style={{ backgroundColor: 'var(--grus-dark)' }}
     >
-      {/* Grain texture overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-        }}
-      />
-
-      <div className="relative max-w-[1280px] mx-auto px-5 sm:px-6 pt-24 pb-12">
-        {/* Top section: editorial heading + CTA */}
-        <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 mb-20">
-          <div className="lg:w-[60%]">
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-[2.75rem] text-white/90 tracking-tight leading-[1.15] max-w-xl">
-              Naturens bedste materialer, leveret til din dor.
-            </h2>
-          </div>
-          <div className="lg:w-[40%] flex flex-col justify-center">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-3">
-              Ring til os
-            </p>
-            <a
-              href="tel:+4572494444"
-              className="font-display text-2xl sm:text-3xl text-white/90 hover:text-white transition-colors duration-300 tracking-tight"
-            >
-              +45 72 49 44 44
-            </a>
-            <p className="text-sm text-white/40 mt-3">
-              Hverdage 8:00 - 16:00
-            </p>
+      {/* USP bar */}
+      <div className="bg-white/5">
+        <div className="max-w-[1280px] mx-auto px-5 sm:px-6 py-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {usps.map((usp) => (
+              <div key={usp.title} className="flex flex-col items-center text-center gap-2">
+                <usp.icon className="w-6 h-6 text-[#3f9b3f]" />
+                <span className="text-sm font-semibold text-white">{usp.title}</span>
+                <span className="text-sm text-gray-400">{usp.description}</span>
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Middle section: 4 columns */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-8 mb-16">
-          {/* Column 1: Navigation */}
+      {/* Main footer */}
+      <div className="max-w-[1280px] mx-auto px-5 sm:px-6 pt-12 pb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-8 mb-12">
+          {/* Kundeservice */}
           <div>
-            <h4 className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/30 mb-5">
-              Navigation
+            <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
+              Kundeservice
             </h4>
-            <ul className="space-y-3">
-              {navigation.map((item) => (
-                <li key={item.href}>
+            <ul className="space-y-2.5">
+              {kundeserviceLinks.map((item) => (
+                <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="text-sm text-white/50 hover:text-white transition-colors duration-300"
+                    className="text-sm text-gray-400 hover:text-white transition-colors"
                   >
                     {item.label}
                   </Link>
@@ -77,17 +92,17 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 2: Produkter */}
+          {/* Information */}
           <div>
-            <h4 className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/30 mb-5">
-              Produkter
+            <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
+              Information
             </h4>
-            <ul className="space-y-3">
-              {categories.map((item) => (
-                <li key={item.href}>
+            <ul className="space-y-2.5">
+              {informationLinks.map((item) => (
+                <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="text-sm text-white/50 hover:text-white transition-colors duration-300"
+                    className="text-sm text-gray-400 hover:text-white transition-colors"
                   >
                     {item.label}
                   </Link>
@@ -96,69 +111,84 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Kontakt */}
+          {/* Kontakt */}
           <div>
-            <h4 className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/30 mb-5">
+            <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
               Kontakt
             </h4>
-            <ul className="space-y-3 text-sm text-white/50">
+            <ul className="space-y-2.5 text-sm text-gray-400">
+              <li className="font-medium text-white/80">Kaervang Materialer ApS</li>
               <li className="flex items-start gap-2">
-                <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-white/30" />
-                <span>
-                  Tylstrupvej 1
-                  <br />
-                  9382 Tylstrup
-                </span>
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                <span>Tylstrupvej 1<br />9382 Tylstrup</span>
               </li>
               <li>
                 <a
                   href="tel:+4572494444"
-                  className="flex items-center gap-2 hover:text-white transition-colors duration-300"
+                  className="flex items-center gap-2 hover:text-white transition-colors"
                 >
-                  <Phone className="w-3.5 h-3.5 flex-shrink-0 text-white/30" />
+                  <Phone className="w-4 h-4 shrink-0 text-gray-500" />
                   +45 72 49 44 44
                 </a>
               </li>
               <li>
                 <a
                   href="mailto:Info@kaervangmaterialer.dk"
-                  className="flex items-center gap-2 hover:text-white transition-colors duration-300"
+                  className="flex items-center gap-2 hover:text-white transition-colors"
                 >
-                  <Mail className="w-3.5 h-3.5 flex-shrink-0 text-white/30" />
+                  <Mail className="w-4 h-4 shrink-0 text-gray-500" />
                   Info@kaervangmaterialer.dk
                 </a>
               </li>
               <li className="flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 flex-shrink-0 text-white/30" />
+                <Clock className="w-4 h-4 shrink-0 text-gray-500" />
                 Hverdage 8:00 - 16:00
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Om Kaervang */}
+          {/* Folg os */}
           <div>
-            <h4 className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/30 mb-5">
-              Kaervang Materialer
+            <h4 className="text-sm uppercase tracking-wider font-semibold text-white mb-4">
+              Folg os
             </h4>
-            <p className="text-sm text-white/50 leading-relaxed">
-              Siden 2008 har vi leveret grus, sand, sten og havematerialer til
-              private og erhverv i hele Danmark. Kvalitet og palidelig levering
-              er vores fundament.
-            </p>
+            <div className="flex items-center gap-3 mb-6">
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                aria-label="Facebook"
+              >
+                <Facebook className="w-4 h-4 text-gray-300" />
+              </a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-4 h-4 text-gray-300" />
+              </a>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <Star className="w-4 h-4 text-[#00b67a] fill-[#00b67a]" />
+              <span>Trustpilot</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Se anmeldelser</p>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-white/30">
-            &copy; 2025 Kaervang Materialer ApS
+          <p className="text-xs text-gray-500">
+            &copy; 2025 Kaervang Materialer ApS &middot; CVR 40125391
           </p>
-          <div className="flex items-center gap-4 text-xs text-white/30">
-            <span>Visa</span>
-            <span className="text-white/10">|</span>
-            <span>MasterCard</span>
-            <span className="text-white/10">|</span>
-            <span>MobilePay</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded">Visa</span>
+            <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded">MasterCard</span>
+            <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded">MobilePay</span>
           </div>
         </div>
       </div>
