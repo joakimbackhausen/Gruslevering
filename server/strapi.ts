@@ -6,6 +6,21 @@
 const STRAPI_URL = process.env.STRAPI_URL || 'http://localhost:1337';
 const STRAPI_TOKEN = process.env.STRAPI_TOKEN || '';
 
+/** Decode common HTML entities from WooCommerce data */
+function decodeEntities(str: string): string {
+  if (!str) return str;
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8212;/g, '—')
+    .replace(/&#8217;/g, ''')
+    .replace(/&#8230;/g, '…');
+}
+
 // ── Interfaces ──
 
 export interface VariantGroup {
@@ -185,7 +200,7 @@ function mapStrapiProduct(p: StrapiProduct): Product {
   const cat = p.category;
   return {
     id: p.externalId || String(p.id),
-    title: p.title,
+    title: decodeEntities(p.title),
     slug: p.slug || '',
     sku: p.sku || '',
     basePrice: p.basePrice ?? 0,
@@ -193,9 +208,9 @@ function mapStrapiProduct(p: StrapiProduct): Product {
     currency: p.currency || 'DKK',
     image: p.image || '',
     images: p.images || [],
-    category: cat?.name || '',
+    category: decodeEntities(cat?.name || ''),
     categorySlug: cat?.slug || '',
-    description: p.description || '',
+    description: decodeEntities(p.description || ''),
     weight: p.weight || '',
     volume: p.volume || '',
     unit: (p.unit as Product['unit']) || 'stk',
@@ -243,8 +258,8 @@ async function refreshCache(): Promise<void> {
       return {
         id: c.externalId || c.id,
         slug: c.slug,
-        name: c.name,
-        description: c.description || '',
+        name: decodeEntities(c.name),
+        description: decodeEntities(c.description || ''),
         image: c.image || '',
         count,
         url: c.url || '',
