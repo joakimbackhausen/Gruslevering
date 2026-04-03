@@ -1,0 +1,20 @@
+{
+    "kind": "singleType",
+    "collectionName": "site_settings",
+    "info": {
+        "singularName": "site-setting",
+        "pluralName": "site-settings",
+        "displayName": "Site Settings"
+    },
+    "options": { "draftAndPublish": false },
+    "attributes": {
+        "companyName": { "type": "string", "default": "Kærvang Materialer ApS" },
+        "phone": { "type": "string", "default": "+45 72 49 44 44" },
+        "email": { "type": "email", "default": "Info@kaervangmaterialer.dk" },
+        "address": { "type": "string", "default": "Tylstrupvej 1, 9382 Tylstrup" },
+        "openingHours": { "type": "text" },
+        "usps": { "type": "json" },
+        "socialMedia": { "type": "json" },
+        "trustpilotUrl": { "type": "string" }
+    }
+}
