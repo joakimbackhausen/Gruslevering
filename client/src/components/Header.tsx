@@ -149,8 +149,9 @@ export default function Header() {
       {/* ── Main header ── */}
       <header
         className={`bg-white transition-shadow duration-200 ${
-          scrolled ? 'shadow-md' : 'shadow-sm'
+          scrolled ? 'shadow-md' : ''
         }`}
+        style={{ borderBottom: '1px solid var(--grus-border)' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[60px] lg:h-[70px]">
           <div className="flex items-center justify-between h-full gap-4">
@@ -195,7 +196,7 @@ export default function Header() {
                 <span className="text-xl lg:text-[22px] font-bold" style={{ color: 'var(--grus-green)' }}>
                   Gruslevering
                 </span>
-                <span className="text-xl lg:text-[22px] font-bold text-gray-800">.dk</span>
+                <span className="text-xl lg:text-[22px] font-bold text-[var(--grus-dark)]">.dk</span>
               </div>
             </Link>
 
@@ -211,7 +212,7 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Søg efter produkter..."
-                  className="w-full h-10 pl-4 pr-10 rounded-full bg-gray-50 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] focus:ring-2 focus:ring-[var(--grus-green)]/20 transition-all"
+                  className="w-full h-10 pl-4 pr-10 rounded-lg bg-gray-50 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] focus:ring-2 focus:ring-[var(--grus-green)]/20 transition-all"
                   style={{ borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--grus-border)' }}
                 />
                 <button
@@ -291,7 +292,7 @@ export default function Header() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Søg efter produkter..."
                 autoFocus
-                className="w-full h-10 pl-4 pr-10 rounded-full border border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] focus:ring-2 focus:ring-[var(--grus-green)]/20 transition-all"
+                className="w-full h-10 pl-4 pr-10 rounded-lg border border-[var(--grus-border)] bg-gray-50 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] focus:ring-2 focus:ring-[var(--grus-green)]/20 transition-all"
               />
               <button
                 type="submit"
@@ -322,7 +323,7 @@ export default function Header() {
             <Link
               href="/shop"
               className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
-                location === '/shop' ? 'bg-white/20' : 'hover:bg-white/10'
+                location === '/shop' ? 'bg-white/25 font-semibold' : 'hover:bg-white/15'
               }`}
             >
               Alle produkter
@@ -332,7 +333,7 @@ export default function Header() {
                 key={cat.id}
                 href={`/shop/${cat.slug}`}
                 className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
-                  isActiveCategory(cat.slug) ? 'bg-white/20' : 'hover:bg-white/10'
+                  isActiveCategory(cat.slug) ? 'bg-white/25 font-semibold' : 'hover:bg-white/15'
                 }`}
               >
                 {cat.name}
@@ -342,7 +343,7 @@ export default function Header() {
             <Link
               href="/volumenberegner"
               className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
-                location === '/volumenberegner' ? 'bg-white/20' : 'hover:bg-white/10'
+                location === '/volumenberegner' ? 'bg-white/25 font-semibold' : 'hover:bg-white/15'
               }`}
             >
               Volumenberegner
@@ -350,7 +351,7 @@ export default function Header() {
             <Link
               href="/levering"
               className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
-                location === '/levering' ? 'bg-white/20' : 'hover:bg-white/10'
+                location === '/levering' ? 'bg-white/25 font-semibold' : 'hover:bg-white/15'
               }`}
             >
               Levering
@@ -358,7 +359,7 @@ export default function Header() {
             <Link
               href="/om-os"
               className={`shrink-0 px-3.5 py-2.5 text-sm font-medium text-white rounded transition-colors whitespace-nowrap ${
-                location === '/om-os' ? 'bg-white/20' : 'hover:bg-white/10'
+                location === '/om-os' ? 'bg-white/25 font-semibold' : 'hover:bg-white/15'
               }`}
             >
               Om os
@@ -386,7 +387,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-[60px] px-5 border-b border-gray-100">
           <Link href="/" onClick={() => setMobileOpen(false)} className="font-display">
             <span className="text-lg font-bold" style={{ color: 'var(--grus-green)' }}>Gruslevering</span>
-            <span className="text-lg font-bold text-gray-800">.dk</span>
+            <span className="text-lg font-bold text-[var(--grus-dark)]">.dk</span>
           </Link>
           <button
             onClick={() => setMobileOpen(false)}
@@ -410,7 +411,7 @@ export default function Header() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Søg efter produkter..."
-                className="w-full h-10 pl-4 pr-10 rounded-full border border-gray-200 bg-gray-50 text-sm placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] transition-colors"
+                className="w-full h-10 pl-4 pr-10 rounded-lg border border-[var(--grus-border)] bg-gray-50 text-sm placeholder:text-gray-400 focus:outline-none focus:border-[var(--grus-green)] transition-colors"
               />
               <button
                 type="submit"

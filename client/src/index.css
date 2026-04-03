@@ -53,8 +53,8 @@
 }
 
 /* ───────────────────────────────────────
-   WARM ORGANIC COMMERCIAL DESIGN SYSTEM
-   Blandselvfroe.dk + Plantorama inspired
+   PLANTORAMA-STYLE COMMERCIAL DESIGN
+   Clean white + deep green + structured
    ─────────────────────────────────────── */
 
 html {
@@ -62,100 +62,102 @@ html {
   scroll-behavior: smooth;
 }
 
-.scrollbar-thin::-webkit-scrollbar { width: 4px; }
-.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+.scrollbar-thin::-webkit-scrollbar { width: 5px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: #f1f1f1; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #aaa; }
 
 :root {
   --button-outline: rgba(0,0,0, .08);
   --badge-outline: rgba(0,0,0, .05);
   --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
+  --elevate-1: rgba(0,0,0, .02);
   --elevate-2: rgba(0,0,0, .06);
 
-  /* Warm off-white base like blandselvfroe */
-  --background: 40 33% 97%;
-  --foreground: 30 10% 18%;
-  --border: 35 20% 88%;
+  /* Pure clean white base */
+  --background: 0 0% 100%;
+  --foreground: 210 11% 15%;
+  --border: 220 13% 91%;
   --card: 0 0% 100%;
-  --card-foreground: 30 10% 18%;
-  --card-border: 35 15% 89%;
+  --card-foreground: 210 11% 15%;
+  --card-border: 220 13% 91%;
 
-  --sidebar: 40 25% 95%;
-  --sidebar-foreground: 30 10% 18%;
-  --sidebar-border: 35 20% 88%;
-  --sidebar-primary: 148 18% 40%;
+  --sidebar: 120 5% 97%;
+  --sidebar-foreground: 210 11% 15%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-primary: 130 50% 30%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 40 20% 92%;
-  --sidebar-accent-foreground: 30 10% 18%;
-  --sidebar-ring: 148 18% 40%;
+  --sidebar-accent: 120 5% 95%;
+  --sidebar-accent-foreground: 210 11% 15%;
+  --sidebar-ring: 130 50% 30%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 30 10% 18%;
-  --popover-border: 35 15% 89%;
+  --popover-foreground: 210 11% 15%;
+  --popover-border: 220 13% 91%;
 
-  /* Primary: sage green (like blandselvfroe #54765D) */
-  --primary: 148 18% 40%;
+  /* Primary: Deep forest green like Plantorama */
+  --primary: 130 50% 30%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 35 15% 94%;
-  --secondary-foreground: 30 10% 25%;
+  --secondary: 210 8% 96%;
+  --secondary-foreground: 210 11% 20%;
 
-  --muted: 35 12% 94%;
-  --muted-foreground: 30 6% 46%;
+  --muted: 210 8% 96%;
+  --muted-foreground: 210 8% 46%;
 
-  /* Accent: warm terracotta orange */
-  --accent: 18 75% 50%;
+  /* Accent: Orange/red for sale badges */
+  --accent: 14 90% 50%;
   --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 72% 50%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 35 15% 89%;
-  --ring: 148 18% 40%;
+  --input: 220 13% 91%;
+  --ring: 130 50% 30%;
 
-  --chart-1: 148 18% 40%;
-  --chart-2: 173 30% 36%;
-  --chart-3: 18 75% 50%;
-  --chart-4: 45 60% 52%;
-  --chart-5: 195 25% 40%;
+  --chart-1: 130 50% 30%;
+  --chart-2: 173 40% 36%;
+  --chart-3: 14 90% 50%;
+  --chart-4: 45 80% 50%;
+  --chart-5: 195 30% 42%;
 
-  --navy: 30 12% 16%;
-  --navy-light: 30 10% 22%;
-  --navy-foreground: 40 20% 92%;
+  --navy: 210 15% 18%;
+  --navy-light: 210 12% 25%;
+  --navy-foreground: 0 0% 100%;
 
-  /* Brand tokens */
-  --grus-green: #54765D;
-  --grus-green-hover: #456650;
-  --grus-green-light: #EEF3EF;
-  --grus-dark: #36332F;
-  --grus-text: #36332F;
-  --grus-bg: #FAF7EF;
-  --grus-accent: #DC8454;
-  --grus-cream: #FAF7EF;
-  --grus-sand: #EEEADB;
-  --grus-stone: #9e9689;
-  --grus-warm: #F5F2EA;
-  --grus-border: #EEEADB;
+  /* Brand tokens - Plantorama-inspired */
+  --grus-green: #1B6B28;
+  --grus-green-hover: #145520;
+  --grus-green-light: #E8F5E9;
+  --grus-green-50: #F1F8E9;
+  --grus-dark: #212121;
+  --grus-text: #212121;
+  --grus-bg: #FFFFFF;
+  --grus-accent: #E53935;
+  --grus-orange: #F57C00;
+  --grus-sand: #F5F5F5;
+  --grus-stone: #757575;
+  --grus-warm: #FAFAFA;
+  --grus-border: #E0E0E0;
+  --grus-yellow: #FFC107;
 
-  /* Typography */
+  /* Typography - Clean commercial */
   --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
 
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 
-  /* Soft warm shadows */
-  --shadow-2xs: 0 1px 2px 0 rgb(54 51 47 / 0.03);
-  --shadow-xs: 0 1px 3px 0 rgb(54 51 47 / 0.05), 0 1px 2px -1px rgb(54 51 47 / 0.03);
-  --shadow-sm: 0 2px 6px -1px rgb(54 51 47 / 0.06), 0 1px 3px -1px rgb(54 51 47 / 0.03);
-  --shadow: 0 4px 12px -2px rgb(54 51 47 / 0.07), 0 2px 4px -2px rgb(54 51 47 / 0.03);
-  --shadow-md: 0 8px 20px -4px rgb(54 51 47 / 0.08), 0 4px 8px -4px rgb(54 51 47 / 0.04);
-  --shadow-lg: 0 16px 36px -8px rgb(54 51 47 / 0.10), 0 6px 12px -4px rgb(54 51 47 / 0.04);
-  --shadow-xl: 0 24px 50px -12px rgb(54 51 47 / 0.14);
-  --shadow-2xl: 0 32px 64px -16px rgb(54 51 47 / 0.20);
+  /* Clean crisp shadows */
+  --shadow-2xs: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  --shadow-xs: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 4px 0 rgb(0 0 0 / 0.06);
+  --shadow: 0 2px 8px -1px rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 16px -2px rgb(0 0 0 / 0.10);
+  --shadow-lg: 0 8px 24px -4px rgb(0 0 0 / 0.12);
+  --shadow-xl: 0 16px 40px -8px rgb(0 0 0 / 0.15);
+  --shadow-2xl: 0 24px 56px -12px rgb(0 0 0 / 0.20);
 
   --tracking-normal: 0em;
   --spacing: 0.25rem;
@@ -180,23 +182,23 @@ html {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
   --opaque-button-border-intensity: 9;
-  --background: 30 10% 7%;
-  --foreground: 40 15% 90%;
-  --border: 30 8% 16%;
-  --card: 30 10% 9%;
-  --card-foreground: 40 15% 90%;
-  --primary: 148 16% 44%;
+  --background: 210 11% 7%;
+  --foreground: 0 0% 96%;
+  --border: 210 10% 16%;
+  --card: 210 11% 9%;
+  --card-foreground: 0 0% 96%;
+  --primary: 130 45% 35%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 30 8% 14%;
-  --secondary-foreground: 40 15% 90%;
-  --muted: 30 8% 14%;
-  --muted-foreground: 30 6% 55%;
-  --accent: 18 70% 48%;
+  --secondary: 210 10% 14%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 210 10% 14%;
+  --muted-foreground: 210 6% 55%;
+  --accent: 14 85% 48%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 62% 50%;
   --destructive-foreground: 0 0% 100%;
-  --input: 30 8% 18%;
-  --ring: 148 16% 44%;
+  --input: 210 10% 18%;
+  --ring: 130 45% 35%;
 }
 
 @layer base {
@@ -243,18 +245,17 @@ html {
 .skeleton-shimmer {
   position: relative;
   overflow: hidden;
-  background: hsl(var(--muted));
+  background: #f5f5f5;
   border-radius: var(--radius);
 }
 .skeleton-shimmer::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
   animation: shimmer 1.5s infinite;
 }
 
 ::selection {
-  background: rgba(84, 118, 93, 0.18);
-  color: inherit;
+  background: rgba(27, 107, 40, 0.15);
 }

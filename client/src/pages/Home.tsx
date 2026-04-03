@@ -67,16 +67,16 @@ function Reveal({
 /* ── Gradient placeholders for categories ── */
 
 const categoryGradients = [
-  'linear-gradient(135deg, #54765D 0%, #6a8e73 100%)',
-  'linear-gradient(135deg, #8d7e6e 0%, #a89484 100%)',
-  'linear-gradient(135deg, #7a8878 0%, #96a394 100%)',
-  'linear-gradient(135deg, #5d8a66 0%, #7daa86 100%)',
-  'linear-gradient(135deg, #a08a6d 0%, #bcaaa4 100%)',
-  'linear-gradient(135deg, #546e5c 0%, #7da680 100%)',
-  'linear-gradient(135deg, #6d7e70 0%, #95a898 100%)',
-  'linear-gradient(135deg, #7e6b5a 0%, #a89484 100%)',
-  'linear-gradient(135deg, #4a6b52 0%, #6d9470 100%)',
-  'linear-gradient(135deg, #607062 0%, #88988a 100%)',
+  'linear-gradient(135deg, #1B6B28 0%, #0D3B16 100%)',
+  'linear-gradient(135deg, #145520 0%, #1B6B28 100%)',
+  'linear-gradient(135deg, #0D3B16 0%, #1B6B28 100%)',
+  'linear-gradient(135deg, #1B6B28 0%, #145520 100%)',
+  'linear-gradient(135deg, #145520 0%, #0D3B16 100%)',
+  'linear-gradient(135deg, #0D3B16 0%, #145520 100%)',
+  'linear-gradient(135deg, #1B6B28 0%, #0D3B16 100%)',
+  'linear-gradient(135deg, #145520 0%, #1B6B28 100%)',
+  'linear-gradient(135deg, #0D3B16 0%, #1B6B28 100%)',
+  'linear-gradient(135deg, #1B6B28 0%, #145520 100%)',
 ];
 
 /* ── Testimonials ── */
@@ -140,8 +140,8 @@ export default function Home() {
           <div
             className="relative rounded-2xl overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #36332F 0%, #3a4a3d 30%, #54765D 70%, #6a8e73 100%)',
-              minHeight: '320px',
+              background: 'linear-gradient(135deg, #1B6B28 0%, #145520 40%, #0D3B16 100%)',
+              minHeight: '380px',
             }}
           >
             {/* Subtle pattern overlay */}
@@ -153,7 +153,7 @@ export default function Home() {
               }}
             />
 
-            <div className="relative z-10 px-6 sm:px-10 lg:px-14 py-14 sm:py-20 lg:py-24 max-w-2xl">
+            <div className="relative z-10 px-8 lg:px-14 py-16 lg:py-24 max-w-2xl">
               {/* Badge */}
               <span className="inline-flex items-center gap-1.5 bg-white/95 text-[var(--grus-dark)] text-xs font-semibold px-3 py-1.5 rounded-full mb-5">
                 <Truck className="w-3.5 h-3.5" />
@@ -161,7 +161,7 @@ export default function Home() {
               </span>
 
               {/* Heading */}
-              <h1 className="font-display font-bold text-white text-3xl sm:text-4xl lg:text-5xl leading-tight mb-4">
+              <h1 className="font-display font-bold text-white text-4xl lg:text-5xl leading-tight mb-4">
                 Grus, sand & sten
                 <br />
                 leveret til døren
@@ -183,7 +183,7 @@ export default function Home() {
                 </Link>
                 <Link
                   href="/volumenberegner"
-                  className="inline-flex items-center gap-2 border border-white text-white font-semibold px-6 py-3 rounded-lg hover:bg-white/10 transition-all"
+                  className="inline-flex items-center gap-2 border border-white/50 text-white font-semibold px-6 py-3 rounded-lg hover:bg-white/10 transition-all"
                 >
                   <Calculator className="w-4 h-4" />
                   Beregn mængde
@@ -322,7 +322,7 @@ export default function Home() {
                     style={{ border: '1px solid var(--grus-border)' }}
                   >
                     {/* Image area */}
-                    <div className="aspect-square p-4 flex items-center justify-center overflow-hidden" style={{ backgroundColor: 'var(--grus-cream)' }}>
+                    <div className="aspect-square p-4 flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#F5F5F5' }}>
                       {p.image ? (
                         <SmartImage
                           src={p.image}
@@ -367,7 +367,7 @@ export default function Home() {
 
                     {/* Button */}
                     <div className="px-4 pb-4">
-                      <span className="inline-flex items-center justify-center w-full py-2 rounded-lg text-sm font-medium text-[var(--grus-green)] transition-colors" style={{ backgroundColor: 'var(--grus-green-light)' }}>
+                      <span className="inline-flex items-center justify-center w-full py-2 rounded-lg text-sm font-medium text-white bg-[var(--grus-green)] transition-colors">
                         Se produkt
                       </span>
                     </div>
