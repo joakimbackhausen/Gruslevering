@@ -464,6 +464,7 @@ interface WcProduct {
   variations: number[];
   stock_status: string;
   featured: boolean;
+  meta_data: { id: number; key: string; value: unknown }[];
 }
 
 interface WcVariation {
@@ -478,6 +479,36 @@ interface WcVariation {
 /** Strip HTML tags from a string */
 function stripHtml(str: string): string {
   return str.replace(/<[^>]*>/g, "").trim();
+}
+
+/**
+ * Parse tiered pricing from WooCommerce _fixed_price_rules meta.
+ * Format: { "2": "1055", "3": "1035", "4": "1015", "7": "985", "11": "980" }
+ * Keys are min quantities, values are prices per unit at that tier.
+ */
+function parseTieredPricing(product: WcProduct): TieredPrice[] | null {
+  const meta = product.meta_data?.find((m) => m.key === "_fixed_price_rules");
+  if (!meta || !meta.value || typeof meta.value !== "object") return null;
+
+  const rules = meta.value as Record<string, string>;
+  const entries = Object.entries(rules)
+    .map(([qty, price]) => ({ minQty: parseInt(qty, 10), price: parseFloat(price) }))
+    .filter((e) => !isNaN(e.minQty) && !isNaN(e.price))
+    .sort((a, b) => a.minQty - b.minQty);
+
+  if (entries.length === 0) return null;
+
+  const tiers: TieredPrice[] = [];
+  for (let i = 0; i < entries.length; i++) {
+    const nextMinQty = entries[i + 1]?.minQty;
+    tiers.push({
+      minQty: entries[i].minQty,
+      maxQty: nextMinQty ? nextMinQty - 1 : null,
+      price: entries[i].price,
+    });
+  }
+
+  return tiers;
 }
 
 /** Parse a WC REST API v3 price string (major units, e.g. "249.00") */
@@ -663,6 +694,9 @@ export async function syncFromWooCommerce(): Promise<void> {
 
     const description = stripHtml(product.description || product.short_description || "");
 
+    // Parse tiered pricing from WooCommerce meta_data
+    const tieredPricing = parseTieredPricing(product);
+
     const values = {
       wcId: product.id,
       title: product.name,
@@ -677,6 +711,7 @@ export async function syncFromWooCommerce(): Promise<void> {
       image: product.images.length > 0 ? product.images[0].src : "",
       images: product.images.map((img) => img.src),
       variants,
+      tieredPricing,
       categoryId,
     };
 
@@ -703,6 +738,7 @@ export async function syncFromWooCommerce(): Promise<void> {
           image: values.image,
           images: values.images,
           variants: values.variants,
+          tieredPricing: values.tieredPricing,
           categoryId: values.categoryId,
         })
         .where(eq(productsTable.slug, product.slug));
@@ -725,6 +761,7 @@ export async function syncFromWooCommerce(): Promise<void> {
             image: values.image,
             images: values.images,
             variants: values.variants,
+            tieredPricing: values.tieredPricing,
             categoryId: values.categoryId,
           },
         });
