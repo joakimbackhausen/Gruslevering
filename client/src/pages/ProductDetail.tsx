@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -7,10 +7,15 @@ import {
   Plus,
   Check,
   ChevronRight,
+  ChevronLeft,
   Tag,
   Truck,
   ShieldCheck,
   Package,
+  ShoppingCart,
+  FileText,
+  CreditCard,
+  HelpCircle,
 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -18,12 +23,18 @@ import SmartImage from '@/components/SmartImage';
 import { useCart } from '@/contexts/CartContext';
 import type { Product, TieredPrice } from '@/types/product';
 
-const formatPrice = (price: number) =>
-  new Intl.NumberFormat('da-DK', {
-    style: 'currency',
-    currency: 'DKK',
-    minimumFractionDigits: 0,
-  }).format(price);
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                           */
+/* ------------------------------------------------------------------ */
+
+function formatPriceKr(price: number): string {
+  return (
+    price.toLocaleString('da-DK', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }) + ' kr.'
+  );
+}
 
 function formatPriceDecimal(price: number): string {
   return price.toLocaleString('da-DK', {
@@ -32,24 +43,84 @@ function formatPriceDecimal(price: number): string {
   });
 }
 
-/* Related product card (consistent style) */
+/** Split a plain-text description into HTML paragraphs for readability */
+function descriptionToHtml(text: string): string {
+  if (!text) return '';
+  if (/<[a-z][\s\S]*>/i.test(text)) return text;
+  const lines = text.split(/\n\n+/);
+  if (lines.length > 1) {
+    return lines.map((l) => `<p>${l.trim()}</p>`).join('');
+  }
+  const sentences = text.match(/[^.!?]+[.!?]+\s*/g);
+  if (!sentences || sentences.length <= 3) return `<p>${text}</p>`;
+  const chunks: string[] = [];
+  for (let i = 0; i < sentences.length; i += 3) {
+    chunks.push(sentences.slice(i, i + 3).join('').trim());
+  }
+  return chunks.map((c) => `<p>${c}</p>`).join('');
+}
+
+/* ------------------------------------------------------------------ */
+/*  Plantorama-style Accordion Tab Button                             */
+/* ------------------------------------------------------------------ */
+
+function AccordionTab({
+  title,
+  icon,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between bg-white rounded-[22px] px-5 h-14 text-left transition-colors hover:bg-gray-50"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-[var(--grus-dark)] opacity-60">{icon}</span>
+          <span className="text-base text-[var(--grus-dark)]">{title}</span>
+        </div>
+        <ChevronRight
+          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+        />
+      </button>
+      <div
+        className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-[3000px]' : 'max-h-0'}`}
+      >
+        <div className="px-5 pt-4 pb-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Related Product Card                                              */
+/* ------------------------------------------------------------------ */
+
 function ProductCard({ product }: { product: Product }) {
   const productUrl = `/produkt/${product.slug || product.id}`;
   const hasVariants = product.variants && product.variants.length > 0;
   const effectivePrice = product.salePrice ?? product.basePrice;
-  const isOnSale = product.salePrice !== null && product.salePrice < product.basePrice;
+  const isOnSale =
+    product.salePrice !== null && product.salePrice < product.basePrice;
 
   return (
     <Link
       href={productUrl}
-      className="group block bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden transition-all duration-200 hover:shadow-md"
+      className="group flex-shrink-0 w-[220px] sm:w-[240px] snap-start block"
     >
-      <div className="relative aspect-square bg-[var(--grus-sand)] p-4">
+      <div className="relative aspect-square bg-white rounded-2xl overflow-hidden mb-3 border border-gray-200">
         {product.image ? (
           <SmartImage
             src={product.image}
             alt={product.title}
-            className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
@@ -57,53 +128,109 @@ function ProductCard({ product }: { product: Product }) {
           </div>
         )}
         {isOnSale && (
-          <span className="absolute top-2 right-2 bg-[var(--grus-accent)] text-white text-xs font-bold rounded-lg px-2 py-1">
-            Tilbud
+          <span className="absolute top-3 left-3 bg-red-500 text-white text-[11px] font-bold rounded-full px-2.5 py-0.5">
+            TILBUD
           </span>
         )}
       </div>
-      <div className="p-4">
-        <span className="text-xs font-semibold uppercase tracking-wide text-[var(--grus-green)]">
-          {product.category}
-        </span>
-        <h3 className="text-sm font-medium text-[var(--grus-dark)] mt-1 line-clamp-2 leading-snug min-h-[2.5rem]">
-          {product.title}
-        </h3>
-        <div className="mt-2">
-          {isOnSale ? (
-            <div className="flex items-baseline gap-2">
-              <span className="text-base font-bold text-[var(--grus-accent)]">
-                {formatPrice(product.salePrice!)}
-              </span>
-              <span className="text-sm text-gray-400 line-through">
-                {formatPrice(product.basePrice)}
-              </span>
-            </div>
-          ) : (
-            <span className="text-base font-bold text-[var(--grus-dark)]">
-              {hasVariants ? 'Fra ' : ''}
-              {formatPrice(effectivePrice)}
+      <h3 className="text-sm font-medium text-[var(--grus-dark)] line-clamp-2 leading-snug min-h-[2.5rem]">
+        {product.title}
+      </h3>
+      <div className="mt-1.5">
+        {isOnSale ? (
+          <div className="flex items-baseline gap-2">
+            <span className="text-base font-bold text-red-600">
+              {formatPriceKr(product.salePrice!)}
             </span>
-          )}
-        </div>
-        {product.deliveryIncluded && (
-          <p className="text-xs text-gray-400 mt-0.5">inkl. levering</p>
+            <span className="text-xs text-gray-400 line-through">
+              {formatPriceKr(product.basePrice)}
+            </span>
+          </div>
+        ) : (
+          <span className="text-base font-bold text-[var(--grus-dark)]">
+            {hasVariants ? 'Fra ' : ''}
+            {formatPriceKr(effectivePrice)}
+          </span>
         )}
       </div>
-      <div className="px-4 pb-4">
-        <span className="block w-full text-center text-sm text-[var(--grus-green)] font-semibold border border-[var(--grus-green)] py-2.5 rounded-lg group-hover:bg-[var(--grus-green-light)] transition-colors">
-          Se produkt &rarr;
-        </span>
-      </div>
+      {product.deliveryIncluded && (
+        <p className="text-xs text-gray-400 mt-0.5">Fri levering</p>
+      )}
     </Link>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Related Products Carousel                                         */
+/* ------------------------------------------------------------------ */
+
+function RelatedCarousel({ products }: { products: Product[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  };
+
+  const scroll = (dir: 'left' | 'right') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === 'left' ? -260 : 260, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    checkScroll();
+  }, [products]);
+
+  if (products.length === 0) return null;
+
+  return (
+    <div className="relative group/carousel">
+      {canScrollLeft && (
+        <button
+          onClick={() => scroll('left')}
+          className="absolute -left-4 top-[100px] z-10 w-10 h-10 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-[var(--grus-green)] transition-all opacity-0 group-hover/carousel:opacity-100"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+      )}
+      <div
+        ref={scrollRef}
+        onScroll={checkScroll}
+        className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-2"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {products.map((p) => (
+          <ProductCard key={p.id} product={p} />
+        ))}
+      </div>
+      {canScrollRight && (
+        <button
+          onClick={() => scroll('right')}
+          className="absolute -right-4 top-[100px] z-10 w-10 h-10 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-[var(--grus-green)] transition-all opacity-0 group-hover/carousel:opacity-100"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Product Detail Page (Plantorama 1:1)                         */
+/* ------------------------------------------------------------------ */
 
 export default function ProductDetail() {
   const params = useParams<{ id: string }>();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
+  const [selectedVariants, setSelectedVariants] = useState<
+    Record<string, string>
+  >({});
   const [addedToCart, setAddedToCart] = useState(false);
   const { addItem } = useCart();
 
@@ -133,8 +260,10 @@ export default function ProductDetail() {
   const relatedProducts = useMemo(() => {
     if (!product) return [];
     return allProducts
-      .filter((p) => p.categorySlug === product.categorySlug && p.id !== product.id)
-      .slice(0, 4);
+      .filter(
+        (p) => p.categorySlug === product.categorySlug && p.id !== product.id,
+      )
+      .slice(0, 8);
   }, [allProducts, product]);
 
   const currentPrice = useMemo(() => {
@@ -154,7 +283,8 @@ export default function ProductDetail() {
   }, [product, selectedVariants]);
 
   const tieredPrice = useMemo((): number | null => {
-    if (!product?.tieredPricing || product.tieredPricing.length === 0) return null;
+    if (!product?.tieredPricing || product.tieredPricing.length === 0)
+      return null;
     const tier = product.tieredPricing.find(
       (t) => quantity >= t.minQty && (t.maxQty === null || quantity <= t.maxQty),
     );
@@ -183,11 +313,13 @@ export default function ProductDetail() {
     setCurrentImageIndex(0);
     setSelectedVariants({});
     setQuantity(1);
+    window.scrollTo(0, 0);
   }, [params.id]);
 
   const handleAddToCart = () => {
     if (!product) return;
-    if (product.variants && product.variants.length > 0 && !allVariantsSelected) return;
+    if (product.variants && product.variants.length > 0 && !allVariantsSelected)
+      return;
 
     const variantString = Object.values(selectedVariants).join(' / ');
     addItem({
@@ -207,7 +339,7 @@ export default function ProductDetail() {
     setTimeout(() => setAddedToCart(false), 2000);
   };
 
-  // Loading
+  /* Loading */
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
@@ -223,7 +355,7 @@ export default function ProductDetail() {
     );
   }
 
-  // Error / Not found
+  /* Error / Not found */
   if (error || !product) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
@@ -233,7 +365,9 @@ export default function ProductDetail() {
           style={{ paddingTop: 'var(--header-h, 124px)' }}
         >
           <p className="text-lg text-gray-500">
-            {error instanceof Error ? error.message : 'Produktet blev ikke fundet'}
+            {error instanceof Error
+              ? error.message
+              : 'Produktet blev ikke fundet'}
           </p>
           <Link
             href="/shop"
@@ -247,29 +381,39 @@ export default function ProductDetail() {
     );
   }
 
-  const images = product.images.length > 0 ? product.images : [product.image];
+  const images =
+    product.images.length > 0 ? product.images : [product.image];
   const hasVariants = !!(product.variants && product.variants.length > 0);
   const isOnSale =
     product.salePrice !== null && product.salePrice < product.basePrice;
+  const shortDescription = product.description
+    ? product.description.split(/[.!?]\s/)[0] + '.'
+    : '';
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
 
       <main className="flex-1" style={{ paddingTop: 'var(--header-h, 124px)' }}>
-        {/* Breadcrumbs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
-          <nav className="flex items-center gap-1 text-sm text-gray-500">
-            <Link href="/" className="hover:text-[var(--grus-dark)] transition-colors">
+        {/* Breadcrumbs — Plantorama style: plain text, > separator */}
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 pt-4 pb-3">
+          <nav className="flex items-center gap-2 text-sm text-gray-500 flex-wrap">
+            <Link
+              href="/"
+              className="hover:text-[var(--grus-dark)] transition-colors"
+            >
               Forside
             </Link>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <Link href="/shop" className="hover:text-[var(--grus-dark)] transition-colors">
+            <span className="text-gray-300">&gt;</span>
+            <Link
+              href="/shop"
+              className="hover:text-[var(--grus-dark)] transition-colors"
+            >
               Shop
             </Link>
             {product.category && (
               <>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-gray-300">&gt;</span>
                 <Link
                   href={`/shop/${product.categorySlug}`}
                   className="hover:text-[var(--grus-dark)] transition-colors"
@@ -278,45 +422,48 @@ export default function ProductDetail() {
                 </Link>
               </>
             )}
-            <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-[var(--grus-dark)] font-medium truncate max-w-[200px]">
-              {product.title}
-            </span>
+            <span className="text-gray-300">&gt;</span>
+            <span className="text-[var(--grus-dark)]">{product.title}</span>
           </nav>
         </div>
 
-        {/* Two columns */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid lg:grid-cols-[55fr_45fr] gap-8 lg:gap-12">
+        {/* Product Section — Plantorama: 50/50 grid, no card wrapper */}
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 pb-10">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-[45px]">
             {/* LEFT: Image Gallery */}
-            <div className="min-w-0">
-              {/* Main image */}
-              <div className="aspect-square rounded-xl p-4 overflow-hidden bg-[var(--grus-sand)]">
+            <div>
+              {/* Main image — square, subtle border */}
+              <div className="relative aspect-square bg-white rounded-2xl overflow-hidden border border-gray-200">
                 {images.length > 0 && images[0] ? (
                   <img
                     key={currentImageIndex}
                     src={images[currentImageIndex]}
                     alt={product.title}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
                     Intet billede
                   </div>
                 )}
+                {isOnSale && (
+                  <span className="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold rounded-full px-3 py-1">
+                    TILBUD
+                  </span>
+                )}
               </div>
 
-              {/* Thumbnails */}
+              {/* Thumbnails row */}
               {images.length > 1 && (
                 <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
                   {images.map((src, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden border-2 transition-all ${
                         index === currentImageIndex
-                          ? 'ring-2 ring-[var(--grus-green)] border-[var(--grus-green)]'
-                          : 'border-[var(--grus-border)] hover:border-gray-300 opacity-70 hover:opacity-100'
+                          ? 'border-[var(--grus-dark)] opacity-100'
+                          : 'border-gray-200 opacity-50 hover:opacity-80'
                       }`}
                     >
                       <img
@@ -331,100 +478,98 @@ export default function ProductDetail() {
             </div>
 
             {/* RIGHT: Product Info */}
-            <div className="lg:sticky lg:top-32 lg:self-start">
-              {/* Category badge */}
-              {product.category && (
-                <Link href={`/shop/${product.categorySlug}`}>
-                  <span className="inline-block text-xs bg-[var(--grus-green-light)] text-[var(--grus-green)] px-3 py-1 rounded-full font-semibold uppercase tracking-wide">
-                    {product.category}
-                  </span>
-                </Link>
-              )}
-
-              {/* Title */}
-              <h1 className="font-display text-2xl lg:text-3xl font-bold text-[var(--grus-dark)] mt-3 leading-tight">
+            <div className="flex flex-col">
+              {/* Title — large, bold */}
+              <h1 className="text-[28px] lg:text-[32px] font-bold text-[var(--grus-dark)] leading-tight">
                 {product.title}
               </h1>
 
-              {/* SKU */}
-              {product.sku && (
-                <p className="text-xs text-gray-400 mt-1">SKU: {product.sku}</p>
+              {/* Short description */}
+              {shortDescription && shortDescription.length > 5 && (
+                <p className="text-base text-[var(--grus-dark)] mt-2.5 leading-relaxed opacity-80">
+                  {shortDescription.length > 120
+                    ? shortDescription.substring(0, 120) + '...'
+                    : shortDescription}
+                </p>
               )}
 
-              {/* Price */}
-              <div className="mt-4">
+              {/* Price — Plantorama style: 40px bold */}
+              <div className="mt-5">
                 {hasVariants && !allVariantsSelected ? (
-                  <div className="text-3xl font-bold text-[var(--grus-dark)]">
-                    Fra {formatPrice(lowestPrice)}
+                  <div className="text-[40px] font-bold text-[var(--grus-dark)] leading-none">
+                    Fra {formatPriceKr(lowestPrice)}
                   </div>
                 ) : (
                   <div>
                     {isOnSale ? (
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-3xl font-bold text-[var(--grus-dark)]">
-                          {formatPrice(effectivePrice)}
-                        </span>
-                        <span className="text-lg line-through text-gray-400">
-                          {formatPrice(product.basePrice)}
-                        </span>
-                      </div>
+                      <>
+                        <div className="text-[40px] font-bold text-[var(--grus-dark)] leading-none">
+                          {formatPriceKr(effectivePrice)}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm line-through text-gray-400">
+                            {formatPriceKr(product.basePrice)}
+                          </span>
+                          <span className="bg-orange-300 text-orange-900 text-xs font-bold rounded-full px-2.5 py-0.5 uppercase">
+                            Tilbud
+                          </span>
+                        </div>
+                      </>
                     ) : (
-                      <div className="text-3xl font-bold text-[var(--grus-dark)]">
-                        {formatPrice(effectivePrice)}
+                      <div className="text-[40px] font-bold text-[var(--grus-dark)] leading-none">
+                        {formatPriceKr(effectivePrice)}
                       </div>
                     )}
                   </div>
                 )}
                 {product.deliveryIncluded && (
-                  <p className="flex items-center gap-1.5 text-sm text-[var(--grus-green)] font-medium mt-2">
-                    <Check className="w-4 h-4" />
+                  <p className="text-sm text-gray-500 mt-2">
                     Inkl. fri levering
                   </p>
                 )}
               </div>
 
-              {/* Variant selectors */}
+              {/* Variant selectors — dropdown style */}
               {hasVariants && (
-                <div className="mt-6 space-y-5">
+                <div className="mt-5 space-y-3">
                   {product.variants!.map((group) =>
                     group.options.length > 0 ? (
                       <div key={group.label}>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[var(--grus-dark)] mb-1.5">
                           {group.label}
                         </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {group.options.map((opt) => {
-                            const isSelected =
-                              selectedVariants[group.label] === opt.name;
-                            const isOOS = !opt.inStock;
-                            return (
-                              <button
+                        <div className="relative">
+                          <select
+                            value={selectedVariants[group.label] || ''}
+                            onChange={(e) =>
+                              setSelectedVariants((prev) => ({
+                                ...prev,
+                                [group.label]: e.target.value,
+                              }))
+                            }
+                            className="w-full appearance-none bg-white border-2 border-gray-200 rounded-[22px] px-5 py-3.5 pr-10 text-base text-[var(--grus-dark)] focus:outline-none focus:border-[var(--grus-green)] transition-all cursor-pointer hover:border-gray-300"
+                          >
+                            <option value="" disabled>
+                              Vælg {group.label.toLowerCase()}
+                            </option>
+                            {group.options.map((opt) => (
+                              <option
                                 key={opt.name}
-                                onClick={() =>
-                                  setSelectedVariants((prev) => ({
-                                    ...prev,
-                                    [group.label]: opt.name,
-                                  }))
-                                }
-                                disabled={isOOS}
-                                className={`py-2.5 px-4 rounded-lg border text-sm font-medium text-center transition-all ${
-                                  isSelected
-                                    ? 'bg-[var(--grus-green)] text-white border-[var(--grus-green)]'
-                                    : isOOS
-                                      ? 'bg-white border-[var(--grus-border)] text-gray-300 opacity-40 line-through cursor-not-allowed'
-                                      : 'bg-white border-[var(--grus-border)] text-gray-700 hover:border-[var(--grus-green)]'
-                                }`}
+                                value={opt.name}
+                                disabled={!opt.inStock}
                               >
-                                <span>{opt.name}</span>
-                                {opt.priceDiff !== 0 && !isOOS && (
-                                  <span className="block text-xs mt-0.5 opacity-70">
-                                    {opt.priceDiff > 0 ? '+' : ''}
-                                    {formatPrice(opt.priceDiff)}
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
+                                {opt.name}
+                                {opt.priceDiff > 0
+                                  ? ` (+${formatPriceDecimal(opt.priceDiff)} kr.)`
+                                  : ''}
+                                {opt.priceDiff < 0
+                                  ? ` (${formatPriceDecimal(opt.priceDiff)} kr.)`
+                                  : ''}
+                                {!opt.inStock ? ' (Udsolgt)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none rotate-90" />
                         </div>
                       </div>
                     ) : null,
@@ -434,172 +579,255 @@ export default function ProductDetail() {
 
               {/* Tiered pricing */}
               {product.tieredPricing && product.tieredPricing.length > 1 && (
-                <div className="mt-6">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="mt-5">
+                  <div className="flex items-center gap-2 mb-2">
                     <Tag className="w-4 h-4 text-[var(--grus-green)]" />
-                    <span className="text-sm font-semibold text-[var(--grus-dark)]">
-                      Spar ved at kobe flere
+                    <span className="text-sm font-medium text-[var(--grus-dark)]">
+                      Mængderabat
                     </span>
                   </div>
-                  <div className="border border-[var(--grus-border)] rounded-xl overflow-hidden">
-                    <div className="grid grid-cols-3 text-xs font-medium text-gray-500 uppercase tracking-wide px-4 py-2.5 bg-gray-50 border-b border-[var(--grus-border)]">
+                  <div className="border-2 border-gray-200 rounded-2xl overflow-hidden text-sm">
+                    <div className="grid grid-cols-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200 font-medium text-gray-500">
                       <span>Antal</span>
-                      <span className="text-right">Pris pr. stk</span>
+                      <span className="text-right">Stk. pris</span>
                       <span className="text-right">Rabat</span>
                     </div>
-                    {product.tieredPricing.map((tier: TieredPrice, idx: number) => {
-                      const isActive =
-                        quantity >= tier.minQty &&
-                        (tier.maxQty === null || quantity <= tier.maxQty);
-                      const basePrice = product.salePrice ?? product.basePrice;
-                      const savingsPercent =
-                        basePrice > 0
-                          ? Math.round(((basePrice - tier.price) / basePrice) * 100)
-                          : 0;
-                      return (
-                        <div
-                          key={idx}
-                          className={`grid grid-cols-3 px-4 py-3 text-sm border-b border-gray-100 last:border-0 transition-colors ${
-                            isActive ? 'bg-[var(--grus-green-light)]' : 'bg-white'
-                          }`}
-                        >
-                          <span
-                            className={
-                              isActive
-                                ? 'font-semibold text-[var(--grus-green)]'
-                                : 'text-gray-600'
-                            }
-                          >
-                            {tier.maxQty === null
-                              ? `${tier.minQty}+`
-                              : tier.minQty === tier.maxQty
-                                ? `${tier.minQty}`
-                                : `${tier.minQty}\u2013${tier.maxQty}`}
-                          </span>
-                          <span
-                            className={`text-right ${
-                              isActive ? 'font-semibold text-[var(--grus-dark)]' : 'text-gray-600'
+                    {product.tieredPricing.map(
+                      (tier: TieredPrice, idx: number) => {
+                        const isActive =
+                          quantity >= tier.minQty &&
+                          (tier.maxQty === null || quantity <= tier.maxQty);
+                        const basePrice =
+                          product.salePrice ?? product.basePrice;
+                        const savingsPercent =
+                          basePrice > 0
+                            ? Math.round(
+                                ((basePrice - tier.price) / basePrice) * 100,
+                              )
+                            : 0;
+                        return (
+                          <div
+                            key={idx}
+                            className={`grid grid-cols-3 px-4 py-2.5 border-b border-gray-100 last:border-0 ${
+                              isActive ? 'bg-green-50' : ''
                             }`}
                           >
-                            {formatPriceDecimal(tier.price)} kr
-                          </span>
-                          <span
-                            className={`text-right ${
-                              savingsPercent > 0
-                                ? 'text-[var(--grus-green)] font-medium'
-                                : 'text-gray-300'
-                            }`}
-                          >
-                            {savingsPercent > 0
-                              ? `\u2212${savingsPercent}%`
-                              : '\u2014'}
-                          </span>
-                        </div>
-                      );
-                    })}
+                            <span
+                              className={
+                                isActive
+                                  ? 'font-semibold text-[var(--grus-green)]'
+                                  : 'text-gray-600'
+                              }
+                            >
+                              {tier.maxQty === null
+                                ? `${tier.minQty}+`
+                                : tier.minQty === tier.maxQty
+                                  ? `${tier.minQty}`
+                                  : `${tier.minQty}\u2013${tier.maxQty}`}
+                            </span>
+                            <span
+                              className={`text-right ${isActive ? 'font-semibold' : 'text-gray-600'}`}
+                            >
+                              {formatPriceDecimal(tier.price)} kr.
+                            </span>
+                            <span
+                              className={`text-right ${savingsPercent > 0 ? 'text-[var(--grus-green)] font-medium' : 'text-gray-300'}`}
+                            >
+                              {savingsPercent > 0
+                                ? `\u2212${savingsPercent}%`
+                                : '\u2014'}
+                            </span>
+                          </div>
+                        );
+                      },
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Quantity + Add to cart */}
+              {/* Delivery USPs — Plantorama style: icon + text lines */}
               <div className="mt-6 space-y-3">
-                {/* Quantity selector */}
-                <div className="flex items-center border border-[var(--grus-border)] rounded-lg overflow-hidden w-fit">
-                  <button
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 transition-colors text-gray-500"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(e) =>
-                      setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-                    }
-                    className="w-14 h-11 text-center text-sm font-medium border-x border-[var(--grus-border)] focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <button
-                    onClick={() => setQuantity((q) => q + 1)}
-                    className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 transition-colors text-gray-500"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Add to cart button */}
-                <button
-                  onClick={handleAddToCart}
-                  disabled={hasVariants && !allVariantsSelected}
-                  className={`w-full py-3.5 px-6 rounded-lg font-semibold text-base transition-all duration-200 ${
-                    addedToCart
-                      ? 'bg-[var(--grus-green)] text-white'
-                      : hasVariants && !allVariantsSelected
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : 'bg-[var(--grus-green)] text-white hover:bg-[var(--grus-green-hover)] shadow-sm hover:shadow-md'
-                  }`}
-                >
-                  {addedToCart ? (
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <Check className="w-5 h-5" />
-                      Tilføjet til kurv
-                    </span>
-                  ) : hasVariants && !allVariantsSelected ? (
-                    'Vælg variant'
-                  ) : (
-                    `Læg i kurv \u2014 ${formatPrice(totalPrice)}`
-                  )}
-                </button>
-              </div>
-
-              {/* Delivery info box */}
-              <div className="bg-[var(--grus-green-light)] rounded-xl p-4 mt-6 space-y-2.5">
-                <div className="flex items-center gap-2.5 text-sm text-gray-700">
-                  <Truck className="w-4 h-4 text-[var(--grus-green)] flex-shrink-0" />
+                <div className="flex items-center gap-3 text-base text-[var(--grus-dark)]">
+                  <Truck className="w-5 h-5 text-[var(--grus-dark)] opacity-60 flex-shrink-0" />
                   <span>Fri levering i hele Danmark</span>
                 </div>
-                <div className="flex items-center gap-2.5 text-sm text-gray-700">
-                  <Package className="w-4 h-4 text-[var(--grus-green)] flex-shrink-0" />
-                  <span>Typisk 3-5 hverdages levering</span>
+                <div className="flex items-center gap-3 text-base text-[var(--grus-dark)]">
+                  <Package className="w-5 h-5 text-[var(--grus-dark)] opacity-60 flex-shrink-0" />
+                  <span>Levering inden for 3-5 hverdage</span>
                 </div>
-                <div className="flex items-center gap-2.5 text-sm text-gray-700">
-                  <ShieldCheck className="w-4 h-4 text-[var(--grus-green)] flex-shrink-0" />
-                  <span>Leveres i bigbag med kran</span>
+                <div className="flex items-center gap-3 text-base text-[var(--grus-dark)]">
+                  <ShieldCheck className="w-5 h-5 text-[var(--grus-dark)] opacity-60 flex-shrink-0" />
+                  <span>Sikker betaling</span>
+                </div>
+              </div>
+
+              {/* Quantity + Add to cart — Plantorama: pill qty, large green button */}
+              <div className="mt-6">
+                <div className="flex items-stretch gap-4">
+                  {/* Quantity selector — pill shaped */}
+                  <div className="flex items-center border-2 border-gray-200 rounded-[22px] bg-white">
+                    <button
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      className="w-12 h-14 flex items-center justify-center hover:bg-gray-50 transition-colors text-gray-500 rounded-l-[22px]"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      value={quantity}
+                      onChange={(e) =>
+                        setQuantity(Math.max(1, parseInt(e.target.value) || 1))
+                      }
+                      className="w-[50px] h-14 text-center text-base font-medium focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      onClick={() => setQuantity((q) => q + 1)}
+                      className="w-12 h-14 flex items-center justify-center hover:bg-gray-50 transition-colors text-gray-500 rounded-r-[22px]"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Add to cart button — Plantorama green pill */}
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={hasVariants && !allVariantsSelected}
+                    className={`flex-1 h-14 rounded-[22px] font-medium text-lg transition-all duration-200 flex items-center justify-center gap-2.5 ${
+                      addedToCart
+                        ? 'bg-[#185735] text-white'
+                        : hasVariants && !allVariantsSelected
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-[#185735] text-white hover:bg-[#144a2d] shadow-sm hover:shadow-md'
+                    }`}
+                  >
+                    {addedToCart ? (
+                      <>
+                        <Check className="w-5 h-5" />
+                        Tilf&oslash;jet!
+                      </>
+                    ) : hasVariants && !allVariantsSelected ? (
+                      'Vælg variant'
+                    ) : (
+                      <>
+                        Læg i kurv
+                        <ShoppingCart className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Total line */}
+                {quantity > 1 && allVariantsSelected && (
+                  <p className="text-sm text-gray-500 mt-2 text-right">
+                    Total:{' '}
+                    <span className="font-semibold text-[var(--grus-dark)]">
+                      {formatPriceDecimal(totalPrice)} kr.
+                    </span>
+                  </p>
+                )}
+              </div>
+
+              {/* Produktinfo — Plantorama accordion tabs */}
+              <div className="mt-10">
+                <h3 className="text-xl font-medium text-[var(--grus-dark)] mb-3">
+                  Produktinfo
+                </h3>
+                <div className="space-y-2.5">
+                  {product.description && (
+                    <AccordionTab
+                      title="Beskrivelse"
+                      icon={<FileText className="w-5 h-5" />}
+                      defaultOpen={false}
+                    >
+                      <div
+                        className="prose prose-sm prose-gray max-w-none text-[15px] text-gray-600 leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0"
+                        dangerouslySetInnerHTML={{
+                          __html: descriptionToHtml(product.description),
+                        }}
+                      />
+                    </AccordionTab>
+                  )}
+
+                  <AccordionTab
+                    title="Levering"
+                    icon={<Truck className="w-5 h-5" />}
+                  >
+                    <div className="space-y-3 text-[15px] text-gray-600">
+                      <p>
+                        Vi leverer til hele Danmark, inkl. brofaste øer.
+                        Levering sker typisk inden for 3-5 hverdage efter
+                        bestilling.
+                      </p>
+                      <p>
+                        Produktet leveres med lastbil og kran direkte til din
+                        adresse. Sørg for at der er plads til kranlevering ved
+                        leveringsstedet.
+                      </p>
+                      <p>
+                        Har du spørgsmål om levering? Ring til os på{' '}
+                        <a
+                          href="tel:+4572494444"
+                          className="text-[var(--grus-green)] font-medium hover:underline"
+                        >
+                          +45 72 49 44 44
+                        </a>
+                      </p>
+                    </div>
+                  </AccordionTab>
+
+                  <AccordionTab
+                    title="Betaling"
+                    icon={<CreditCard className="w-5 h-5" />}
+                  >
+                    <div className="space-y-3 text-[15px] text-gray-600">
+                      <p>Vi accepterer følgende betalingsformer:</p>
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <span className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">
+                          Visa
+                        </span>
+                        <span className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">
+                          MasterCard
+                        </span>
+                        <span className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">
+                          MobilePay
+                        </span>
+                        <span className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium">
+                          Bankoverførsel
+                        </span>
+                      </div>
+                      <p>
+                        Betaling trækkes først når varen er afsendt. Du handler
+                        sikkert hos os med krypteret forbindelse.
+                      </p>
+                    </div>
+                  </AccordionTab>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Description section */}
-          {product.description && (
-            <div className="border-t border-[var(--grus-border)] mt-12 pt-8">
-              <h2 className="font-display text-xl lg:text-2xl font-bold text-[var(--grus-dark)] mb-4">
-                Produktbeskrivelse
-              </h2>
-              <div
-                className="prose prose-gray max-w-3xl text-sm text-gray-600 leading-relaxed [&_br]:my-1 prose-headings:font-display prose-headings:text-[var(--grus-dark)]"
-                dangerouslySetInnerHTML={{
-                  __html: product.description
-                    .replace(/&lt;/g, '<')
-                    .replace(/&gt;/g, '>')
-                    .replace(/<br\s*\/?>/gi, '<br />'),
-                }}
-              />
+          {/* Trust banner — Plantorama green */}
+          <div className="mt-10 bg-[#c8dfbb] rounded-2xl px-8 py-6 flex items-start gap-4">
+            <ShieldCheck className="w-6 h-6 text-[var(--grus-dark)] mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-[var(--grus-dark)]">
+                Altid det bedste
+              </p>
+              <p className="text-sm text-[var(--grus-dark)] opacity-75 mt-1">
+                Vi udvælger med omhu de bedste materialer, så du altid får
+                kvalitetsprodukter leveret direkte til din dør.
+              </p>
             </div>
-          )}
+          </div>
 
-          {/* Related products */}
+          {/* Related Products */}
           {relatedProducts.length > 0 && (
-            <div className="border-t border-[var(--grus-border)] mt-12 pt-8">
-              <h2 className="font-display text-xl lg:text-2xl font-bold text-[var(--grus-dark)] mb-6">
-                Andre kunder kobte ogsa
+            <div className="mt-12">
+              <h2 className="text-base font-medium text-[var(--grus-dark)] mb-5">
+                Lignende produkter
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {relatedProducts.map((rp) => (
-                  <ProductCard key={rp.id} product={rp} />
-                ))}
-              </div>
+              <RelatedCarousel products={relatedProducts} />
             </div>
           )}
         </div>

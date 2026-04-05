@@ -3,19 +3,12 @@
   "configurations": [
     {
       "name": "frontend",
-      "runtimeExecutable": "node",
+      "runtimeExecutable": "/usr/local/bin/node",
       "runtimeArgs": ["--env-file=.env", "--import=tsx", "server/index.ts"],
       "port": 3000,
       "env": {
         "NODE_ENV": "development"
       }
-    },
-    {
-      "name": "strapi",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "develop"],
-      "cwd": "cms",
-      "port": 1337
     }
   ]
 }

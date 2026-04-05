@@ -102,10 +102,11 @@ export default function Checkout() {
     setSubmitting(true);
     setSubmitError('');
 
-    const deliveryLabels: Record<DeliveryMethod, string> = {
-      bigbag: 'Bigbag-levering',
-      tipvogn: 'Tipvogn-levering',
-      pickup: 'Afhentning i Tylstrup',
+    // Map frontend keys to DB enum values
+    const deliveryMethodMap: Record<DeliveryMethod, string> = {
+      bigbag: 'bigbag',
+      tipvogn: 'tipvogn',
+      pickup: 'afhentning',
     };
 
     try {
@@ -117,7 +118,7 @@ export default function Checkout() {
         customerZip: customer.zip,
         customerCity: customer.city,
         customerCompany: customer.company || undefined,
-        deliveryMethod: deliveryLabels[deliveryMethod],
+        deliveryMethod: deliveryMethodMap[deliveryMethod],
         lines: items.map((item) => ({
           productId: item.id,
           title: item.title,
@@ -140,9 +141,13 @@ export default function Checkout() {
       }
 
       const result = await res.json();
-      navigate(
-        `/ordre-bekraeftelse?order=${encodeURIComponent(result.orderNumber)}&delivery=${encodeURIComponent(deliveryLabels[deliveryMethod])}`
-      );
+      if (result.paymentUrl) {
+        // Redirect to Worldline payment page
+        window.location.href = result.paymentUrl;
+      } else {
+        // No payment needed (free order / pickup)
+        navigate(`/ordre-bekraeftelse?order_id=${result.orderId}`);
+      }
     } catch (err: any) {
       setSubmitError(err.message || 'Der opstod en fejl. Pr\u00f8v igen.');
     } finally {

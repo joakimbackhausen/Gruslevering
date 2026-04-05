@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
+import { syncFromWooCommerce } from "./data-source";
 import { createServer } from "http";
 
 const app = express();
@@ -11,16 +12,6 @@ declare module "http" {
     rawBody: unknown;
   }
 }
-
-app.use(
-  express.json({
-    verify: (req, _res, buf) => {
-      req.rawBody = buf;
-    },
-  }),
-);
-
-app.use(express.urlencoded({ extended: false }));
 
 // Fast healthcheck endpoint for Railway
 app.get("/health", (_req, res) => {
@@ -65,7 +56,24 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  app.use(
+    express.json({
+      verify: (req, _res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
+  app.use(express.urlencoded({ extended: false }));
+
   await registerRoutes(httpServer, app);
+
+  // Initial WooCommerce sync on startup
+  syncFromWooCommerce().catch(err => console.error("[wc] Initial sync failed:", err));
+
+  // Periodic sync every 10 minutes
+  setInterval(() => {
+    syncFromWooCommerce().catch(err => console.error("[wc] Periodic sync failed:", err));
+  }, 10 * 60 * 1000);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

@@ -9,6 +9,7 @@ import {
   createOrder,
 } from "./data-source";
 import type { CreateOrderInput } from "./data-source";
+import { wcGet } from "./woocommerce";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -59,7 +60,7 @@ export async function registerRoutes(
     }
   });
 
-  // POST /api/orders — create an order in Strapi
+  // POST /api/orders — create an order in WooCommerce + local DB
   app.post('/api/orders', async (req, res) => {
     try {
       const input = req.body as CreateOrderInput;
@@ -76,10 +77,33 @@ export async function registerRoutes(
       }
 
       const result = await createOrder(input);
-      res.json(result);
+      res.json({
+        orderId: result.orderId,
+        orderNumber: result.orderNumber,
+        total: result.total,
+        paymentUrl: result.paymentUrl,
+      });
     } catch (err) {
       console.error('Error creating order:', err);
       res.status(500).json({ error: 'Failed to create order' });
+    }
+  });
+
+  // GET /api/orders/:wcId — fetch order status from WooCommerce
+  app.get('/api/orders/:wcId', async (req, res) => {
+    try {
+      const wcId = req.params.wcId;
+      const order = await wcGet<any>(`/orders/${wcId}`);
+      res.json({
+        id: order.id,
+        status: order.status,
+        total: order.total,
+        paymentUrl: order.payment_url || null,
+        orderNumber: String(order.number),
+      });
+    } catch (err) {
+      console.error('Error fetching WC order:', err);
+      res.status(500).json({ error: 'Failed to fetch order' });
     }
   });
 

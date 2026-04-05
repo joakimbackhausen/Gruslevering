@@ -24,7 +24,7 @@ const informationLinks = [
 
 export default function Footer() {
   return (
-    <footer style={{ backgroundColor: 'var(--grus-dark)' }}>
+    <footer style={{ backgroundColor: '#1a2e1a' }}>
       {/* Main footer content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-8 mb-12">

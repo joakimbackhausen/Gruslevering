@@ -11,6 +11,8 @@ import {
   CheckCircle,
   Leaf,
   HeartHandshake,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -80,7 +82,7 @@ const categoryGradients = [
   'linear-gradient(135deg, #145520 0%, #1B6B28 100%)',
 ];
 
-/* -- Product Card (shared design) -- */
+/* -- Product Card (Plantorama-style) -- */
 
 function ProductCard({ product }: { product: Product }) {
   const productUrl = `/produkt/${product.slug || product.id}`;
@@ -109,10 +111,10 @@ function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={productUrl}
-      className="group block bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden hover:shadow-md transition-all duration-200"
+      className="group block bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-gray-200 hover:-translate-y-1"
     >
       {/* Image */}
-      <div className="relative aspect-square bg-[var(--grus-sand)] p-4">
+      <div className="relative aspect-square bg-gradient-to-b from-[#f5f5f5] to-[#ececec] p-4">
         {product.image ? (
           <SmartImage
             src={product.image}
@@ -125,53 +127,53 @@ function ProductCard({ product }: { product: Product }) {
           </div>
         )}
         {isOnSale && (
-          <span className="absolute top-2 right-2 bg-[var(--grus-accent)] text-white text-xs font-bold rounded-lg px-2 py-1">
-            Tilbud
+          <span className="absolute top-2 left-2 bg-[var(--grus-accent)] text-white text-[11px] font-bold rounded-md px-2 py-0.5">
+            TILBUD
           </span>
         )}
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--grus-green)]">
-          {product.category}
-        </p>
-        <h3 className="text-sm font-medium text-[var(--grus-dark)] line-clamp-2 mt-1 min-h-[2.5rem] leading-snug">
+      <div className="p-3 pb-2">
+        <h3 className="text-[13px] font-medium text-gray-800 line-clamp-2 min-h-[2.5em] leading-snug">
           {product.title}
         </h3>
-        <div className="mt-2 flex items-baseline gap-2">
+        <div className="mt-1.5 flex items-baseline gap-2">
           {isOnSale ? (
             <>
-              <span className="text-base font-bold text-[var(--grus-accent)]">
+              <span className="text-[15px] font-bold text-[var(--grus-accent)]">
                 {hasVariants ? 'Fra ' : ''}
                 {formatPrice(product.salePrice!)}
               </span>
-              <span className="text-sm text-gray-400 line-through">
+              <span className="text-xs text-gray-400 line-through">
                 {formatPrice(product.basePrice)}
               </span>
             </>
           ) : (
-            <span className="text-base font-bold text-[var(--grus-dark)]">
+            <span className="text-[15px] font-bold text-gray-900">
               {hasVariants ? 'Fra ' : ''}
               {formatPrice(effectivePrice)}
             </span>
           )}
         </div>
         {product.deliveryIncluded && (
-          <p className="text-xs text-gray-400 mt-0.5">inkl. levering</p>
+          <p className="text-[11px] text-green-600 mt-0.5 font-medium">inkl. levering</p>
         )}
       </div>
 
       {/* Button */}
-      <div className="px-4 pb-4 mt-auto">
+      <div className="px-3 pb-3">
         {hasVariants ? (
-          <span className="block w-full text-center border border-[var(--grus-green)] text-[var(--grus-green)] py-2.5 rounded-lg text-sm font-semibold group-hover:bg-[var(--grus-green-light)] transition-colors">
-            Se produkt &rarr;
+          <span className="block w-full text-center py-2.5 rounded-lg text-[13px] font-semibold text-[var(--grus-green)] bg-green-50 group-hover:bg-green-100 transition-colors">
+            Vælg variant &rarr;
           </span>
         ) : (
           <button
             onClick={handleAddToCart}
-            className="w-full bg-[var(--grus-green)] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--grus-green-hover)] transition-colors cursor-pointer"
+            className="w-full py-2.5 rounded-lg text-[13px] font-semibold text-white transition-colors cursor-pointer"
+            style={{ backgroundColor: 'var(--grus-green)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--grus-green-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--grus-green)')}
           >
             Læg i kurv
           </button>
@@ -182,7 +184,7 @@ function ProductCard({ product }: { product: Product }) {
 }
 
 /* ================================================================
-   HOME PAGE
+   HOME PAGE - Plantorama-style layout
    ================================================================ */
 
 export default function Home() {
@@ -207,135 +209,202 @@ export default function Home() {
 
   const featuredProducts = products.slice(0, 8);
 
+  /* Product carousel scroll */
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const scrollCarousel = (dir: 'left' | 'right') => {
+    if (!carouselRef.current) return;
+    const amount = carouselRef.current.offsetWidth * 0.8;
+    carouselRef.current.scrollBy({
+      left: dir === 'left' ? -amount : amount,
+      behavior: 'smooth',
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
 
-      {/* ===== SECTION 1: HERO BANNER ===== */}
-      <section className="mt-4 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+      {/* ═══ PROMOTIONAL BANNERS (Plantorama-style colored bars) ═══ */}
+      <div
+        className="grid grid-cols-1 sm:grid-cols-2 gap-2 px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto w-full mt-2"
+        style={{ paddingTop: 'var(--header-h, 164px)' }}
+      >
+        <Link
+          href="/levering"
+          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white text-[13px] font-semibold transition-all hover:opacity-90 hover:shadow-md"
+          style={{ backgroundColor: '#2B5B2B' }}
+        >
+          <Truck className="w-4 h-4 shrink-0" />
+          Fri levering på alle ordrer &ndash; se betingelser her
+        </Link>
+        <Link
+          href="/volumenberegner"
+          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white text-[13px] font-semibold transition-all hover:opacity-90 hover:shadow-md"
+          style={{ backgroundColor: '#D4844C' }}
+        >
+          <Calculator className="w-4 h-4 shrink-0" />
+          Beregn hvor meget materiale du skal bruge
+        </Link>
+      </div>
+
+      {/* ═══ HERO BANNER (Plantorama-style full-width image with text overlay) ═══ */}
+      <section className="mt-3 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1400px] mx-auto">
           <div
-            className="relative rounded-2xl overflow-hidden min-h-[320px] lg:min-h-[440px] flex items-center"
-            style={{
-              background: 'linear-gradient(135deg, #1B6B28 0%, #145520 50%, #0D3B16 100%)',
-            }}
+            className="relative rounded-2xl overflow-hidden min-h-[300px] sm:min-h-[400px] lg:min-h-[500px] flex items-center"
           >
-            {/* Subtle radial highlight */}
-            <div
-              className="absolute inset-0 opacity-20"
-              style={{
-                backgroundImage:
-                  'radial-gradient(ellipse at 80% 50%, rgba(255,255,255,0.2) 0%, transparent 60%)',
-              }}
+            {/* Background image */}
+            {/* Hero image - delivery truck from gruslevering.dk */}
+            <img
+              src="https://gruslevering.dk/wp-content/uploads/2026/03/image.jpg"
+              alt="Grus, sten og jord leveret til døren"
+              className="absolute inset-0 w-full h-full object-cover"
             />
+            {/* Dark overlay for readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
 
-            <div className="relative z-10 px-8 lg:px-14 py-16 lg:py-20 max-w-2xl">
-              {/* Badge */}
-              <span className="inline-flex items-center gap-1.5 bg-white/95 text-[var(--grus-dark)] text-xs font-semibold px-3 py-1.5 rounded-full mb-5 shadow-sm">
-                <Truck className="w-3.5 h-3.5" />
-                Fri levering
-              </span>
-
-              {/* Heading */}
-              <h1 className="font-display font-bold text-white text-3xl sm:text-4xl lg:text-5xl leading-tight mb-4 max-w-lg">
-                Grus, sand & sten leveret til døren
+            {/* Content - inspired by gruslevering.dk nytestforside */}
+            <div className="relative z-10 px-8 lg:px-16 py-14 lg:py-20 max-w-3xl">
+              <h1 className="font-display font-extrabold text-white text-[28px] sm:text-[40px] lg:text-[56px] uppercase leading-[1.05] mb-5 tracking-tight drop-shadow-lg">
+                Grus, sten og jord
+                <br />
+                leveret direkte
+                <br />
+                til døren
               </h1>
 
-              {/* Subtext */}
-              <p className="text-white/80 text-base lg:text-lg mb-8 max-w-md">
-                Bestil materialer online og få leveret direkte til din adresse i hele Danmark
+              <p className="text-white/80 text-base lg:text-lg mb-8 max-w-md leading-relaxed drop-shadow">
+                Big bags i højkvalitet &ndash; Fri levering i hele landet
               </p>
 
-              {/* CTAs */}
-              <div className="flex flex-wrap gap-3">
+              {/* CTA */}
+              <Link
+                href="/shop"
+                className="inline-flex items-center gap-2 font-bold text-base lg:text-lg px-8 lg:px-10 py-4 rounded-xl shadow-xl hover:shadow-2xl hover:translate-y-[-2px] transition-all text-white"
+                style={{ backgroundColor: '#2B5B2B' }}
+              >
+                Se alle produkter
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ PRODUCT CAROUSEL SECTION (Plantorama-style with arrows) ═══ */}
+      <section className="py-10 lg:py-14">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px]">
+                Populære produkter
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => scrollCarousel('left')}
+                  className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:border-gray-400 transition-colors"
+                  aria-label="Scroll venstre"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => scrollCarousel('right')}
+                  className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:border-gray-400 transition-colors"
+                  aria-label="Scroll højre"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </Reveal>
+
+          {loadingProducts ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-100">
+                  <div className="aspect-square bg-gray-100 animate-pulse" />
+                  <div className="p-3 space-y-2">
+                    <div className="h-4 w-3/4 rounded bg-gray-100 animate-pulse" />
+                    <div className="h-5 w-1/3 rounded bg-gray-100 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Scrollable carousel */}
+              <div
+                ref={carouselRef}
+                className="flex gap-4 overflow-x-auto scroll-smooth pb-2"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                <style>{`.product-carousel::-webkit-scrollbar { display: none; }`}</style>
+                {featuredProducts.map((p) => (
+                  <div key={p.id} className="shrink-0 w-[220px] sm:w-[240px] lg:w-[260px]">
+                    <ProductCard product={p} />
+                  </div>
+                ))}
+              </div>
+
+              {/* "See all" link */}
+              <div className="text-center mt-6">
                 <Link
                   href="/shop"
-                  className="inline-flex items-center gap-2 bg-white text-[var(--grus-dark)] font-semibold px-6 py-3 rounded-lg shadow-sm hover:shadow-md transition-all"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--grus-green)] hover:text-[var(--grus-green-hover)] transition-colors"
                 >
                   Se alle produkter
                   <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Link
-                  href="/volumenberegner"
-                  className="inline-flex items-center gap-2 bg-white/15 backdrop-blur text-white border border-white/30 font-semibold px-6 py-3 rounded-lg hover:bg-white/25 transition-all"
-                >
-                  <Calculator className="w-4 h-4" />
-                  Beregn mængde
-                </Link>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </section>
 
-      {/* ===== SECTION 2: USP STRIP ===== */}
-      <section className="py-5 border-y border-[var(--grus-border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap justify-center sm:justify-between gap-4 sm:gap-2">
-            {[
-              { icon: Truck, text: 'Fri levering' },
-              { icon: Clock, text: '3-5 hverdages levering' },
-              { icon: Star, text: '4.8/5 Trustpilot' },
-              { icon: ShieldCheck, text: 'Sikker betaling' },
-            ].map((usp) => (
-              <div key={usp.text} className="flex items-center gap-2 px-2">
-                <usp.icon className="w-4 h-4 text-[var(--grus-green)] flex-shrink-0" />
-                <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
-                  {usp.text}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== SECTION 3: CATEGORY CARDS ===== */}
-      <section className="py-12 lg:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* ═══ CATEGORY GRID (Plantorama-style big visual tiles) ═══ */}
+      <section className="py-12 lg:py-16 bg-[#f7f7f5]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal>
-            <div className="mb-8">
-              <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl">
-                Udforsk vores sortiment
-              </h2>
-              <div className="w-12 h-0.5 bg-[var(--grus-green)] mt-2 mb-8" />
-            </div>
+            <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] mb-8">
+              Udforsk vores sortiment
+            </h2>
           </Reveal>
 
           {loadingCategories ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-5">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="aspect-[4/3] rounded-xl bg-gray-100 animate-pulse" />
+                <div key={i} className="aspect-[4/3] rounded-2xl bg-gray-200 animate-pulse" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-5">
               {parentCategories.map((cat, i) => (
                 <Reveal key={cat.id} delay={i * 50}>
                   <Link
                     href={`/shop/${cat.slug}`}
-                    className="group relative aspect-[4/3] rounded-xl overflow-hidden block"
+                    className="group relative aspect-[4/3] rounded-2xl overflow-hidden block shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
                   >
                     {cat.image ? (
                       <SmartImage
                         src={cat.image}
                         alt={cat.name}
-                        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500"
                       />
                     ) : (
                       <div
-                        className="w-full h-full group-hover:scale-[1.03] transition-transform duration-300"
+                        className="w-full h-full group-hover:scale-[1.06] transition-transform duration-500"
                         style={{ background: categoryGradients[i % categoryGradients.length] }}
                       />
                     )}
-                    {/* Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    {/* Text */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <p className="text-white font-semibold text-lg leading-tight">
+                    {/* Darker, richer gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/75 transition-all duration-300" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4 lg:p-5">
+                      <p className="text-white font-bold text-base lg:text-lg leading-tight drop-shadow-md">
                         {cat.name}
                       </p>
-                      <p className="text-white/70 text-sm mt-0.5">
+                      <p className="text-white/70 text-[13px] mt-1 flex items-center gap-1">
                         {cat.count} produkter
+                        <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
                       </p>
                     </div>
                   </Link>
@@ -346,92 +415,61 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== SECTION 4: FEATURED PRODUCTS ===== */}
-      <section className="py-12 lg:py-16 bg-[var(--grus-sand)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Reveal>
-            <div className="flex items-end justify-between mb-8">
-              <div>
-                <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl">
-                  Populære produkter
-                </h2>
-                <div className="w-12 h-0.5 bg-[var(--grus-green)] mt-2" />
-              </div>
-              <Link
-                href="/shop"
-                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-[var(--grus-green)] hover:text-[var(--grus-green-hover)] transition-colors"
-              >
-                Se alle
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </Reveal>
-
-          {loadingProducts ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl overflow-hidden border border-[var(--grus-border)]">
-                  <div className="aspect-square bg-gray-100 animate-pulse" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-3 w-16 rounded bg-gray-100 animate-pulse" />
-                    <div className="h-4 w-3/4 rounded bg-gray-100 animate-pulse" />
-                    <div className="h-5 w-1/3 rounded bg-gray-100 animate-pulse" />
-                  </div>
+      {/* ═══ VALUE PROPOSITIONS (like gruslevering nytestforside) ═══ */}
+      <section className="py-10 lg:py-12 bg-white">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 lg:gap-4">
+            {[
+              { emoji: '🚚', title: 'Gratis levering', desc: 'På alle bigbag produkter' },
+              { emoji: '✅', title: 'Kun kvalitet', desc: 'Håndplukkede materialer' },
+              { emoji: '📦', title: 'Hurtig levering', desc: '3-5 hverdages levering' },
+              { emoji: '🏠', title: 'Til din adresse', desc: 'Levering i hele Danmark' },
+              { emoji: '💰', title: 'Ingen gebyrer', desc: 'Pris inkl. levering' },
+              { emoji: '📞', title: 'Kundeservice', desc: 'Ring 72 49 44 44' },
+            ].map((item) => (
+              <div key={item.title} className="flex flex-col items-center text-center gap-2">
+                <span className="text-2xl lg:text-3xl">{item.emoji}</span>
+                <div>
+                  <p className="text-sm font-bold text-gray-900">{item.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {featuredProducts.map((p, i) => (
-                <Reveal key={p.id} delay={i * 40}>
-                  <ProductCard product={p} />
-                </Reveal>
-              ))}
-            </div>
-          )}
-
-          {/* Mobile "see all" */}
-          <Reveal delay={100}>
-            <div className="text-center mt-6 sm:hidden">
-              <Link
-                href="/shop"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--grus-green)]"
-              >
-                Se alle produkter
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </Reveal>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ===== SECTION 5: VOLUME CALCULATOR CTA ===== */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+      {/* ═══ VOLUME CALCULATOR CTA (polished) ═══ */}
+      <section className="py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1400px] mx-auto">
           <Reveal>
-            <div className="bg-[var(--grus-green-light)] rounded-2xl p-8 lg:p-12 flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-              {/* Left: Text (60%) */}
-              <div className="flex-[3] text-center lg:text-left">
-                <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl mb-3">
-                  Beregn hvor meget du har brug for
+            <div className="relative rounded-2xl overflow-hidden p-8 lg:p-14 flex flex-col lg:flex-row items-center gap-8 lg:gap-14">
+              {/* Background */}
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #2B5B2B 0%, #1B4520 100%)' }} />
+              <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23fff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'20\' cy=\'20\' r=\'2\'/%3E%3C/g%3E%3C/svg%3E")' }} />
+
+              <div className="flex-[3] text-center lg:text-left relative z-10">
+                <span className="inline-block text-green-300 text-xs font-bold uppercase tracking-widest mb-3">Gratis værktøj</span>
+                <h2 className="font-display font-bold text-white text-2xl sm:text-3xl lg:text-[34px] mb-3 leading-tight">
+                  Beregn hvor meget
+                  <br />du har brug for
                 </h2>
-                <p className="text-gray-600 text-sm sm:text-base max-w-lg mb-6">
+                <p className="text-white/70 text-[15px] max-w-lg mb-7 leading-relaxed">
                   Brug vores volumenberegner til at finde ud af præcis hvor mange bigbags du skal
                   bestille. Indtast dine mål og få svar med det samme.
                 </p>
                 <Link
                   href="/volumenberegner"
-                  className="inline-flex items-center gap-2 bg-[var(--grus-green)] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[var(--grus-green-hover)] transition-colors"
+                  className="inline-flex items-center gap-2 bg-white text-[#2B5B2B] font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
                 >
+                  <Calculator className="w-4.5 h-4.5" />
                   Prøv beregneren
-                  <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
 
-              {/* Right: Icon (40%) */}
-              <div className="flex-[2] flex items-center justify-center">
-                <div className="w-28 h-28 lg:w-36 lg:h-36 bg-[var(--grus-green)] rounded-3xl flex items-center justify-center shadow-lg">
-                  <Calculator className="w-14 h-14 lg:w-20 lg:h-20 text-white" />
+              <div className="flex-[2] flex items-center justify-center relative z-10">
+                <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-3xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-2xl border border-white/10">
+                  <Calculator className="w-16 h-16 lg:w-20 lg:h-20 text-white/90" />
                 </div>
               </div>
             </div>
@@ -439,25 +477,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== SECTION 6: WHY CHOOSE US ===== */}
+      {/* ═══ WHY CHOOSE US (polished cards) ═══ */}
       <section className="py-12 lg:py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal>
-            <div className="text-center mb-10">
-              <h2 className="font-display font-bold text-[var(--grus-dark)] text-2xl sm:text-3xl">
-                Hvorfor vælge Gruslevering.dk?
-              </h2>
-              <div className="w-12 h-0.5 bg-[var(--grus-green)] mt-2 mx-auto" />
-            </div>
+            <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] text-center mb-10">
+              Hvorfor vælge Gruslevering.dk?
+            </h2>
           </Reveal>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
               {
                 icon: CheckCircle,
                 title: 'Nem bestilling',
                 description:
-                  'Bestil materialer online på få minutter. Vælg produkt, mængde og leveringsadresse - så klarer vi resten.',
+                  'Bestil materialer online på få minutter. Vælg produkt, mængde og leveringsadresse.',
               },
               {
                 icon: Leaf,
@@ -469,18 +504,18 @@ export default function Home() {
                 icon: HeartHandshake,
                 title: 'Personlig service',
                 description:
-                  'Har du spørgsmål? Vores team er altid klar til at hjælpe dig med at finde det rigtige produkt.',
+                  'Har du spørgsmål? Vores team er altid klar til at hjælpe dig med at finde det rigtige.',
               },
             ].map((item, i) => (
               <Reveal key={item.title} delay={i * 80}>
-                <div className="text-center p-6">
-                  <div className="w-14 h-14 bg-[var(--grus-green-light)] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <item.icon className="w-7 h-7 text-[var(--grus-green)]" />
+                <div className="text-center p-8 rounded-2xl bg-[#f7f7f5] hover:bg-[#f0f0ec] transition-colors">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: '#2B5B2B' }}>
+                    <item.icon className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="font-display font-semibold text-[var(--grus-dark)] text-lg mb-2">
+                  <h3 className="font-display font-bold text-gray-900 text-lg mb-2">
                     {item.title}
                   </h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">
+                  <p className="text-gray-500 text-[14px] leading-relaxed">
                     {item.description}
                   </p>
                 </div>
@@ -490,9 +525,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== SECTION 7: FOOTER CTA ===== */}
-      <section className="py-16 lg:py-20" style={{ backgroundColor: 'var(--grus-dark)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* ═══ FOOTER CTA ═══ */}
+      <section className="py-16 lg:py-20" style={{ backgroundColor: '#2B5B2B' }}>
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Reveal>
             <h2 className="font-display font-bold text-white text-2xl sm:text-3xl lg:text-4xl mb-4">
               Klar til at komme i gang?
@@ -503,14 +538,14 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-3">
               <Link
                 href="/shop"
-                className="inline-flex items-center gap-2 bg-[var(--grus-green)] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[var(--grus-green-hover)] transition-colors"
+                className="inline-flex items-center gap-2 bg-white text-[#2B5B2B] font-bold px-7 py-3.5 rounded-xl shadow-lg hover:shadow-xl transition-all"
               >
                 Se produkter
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="/kontakt"
-                className="inline-flex items-center gap-2 border border-white/30 text-white font-semibold px-6 py-3 rounded-lg hover:bg-white/10 transition-colors"
+                className="inline-flex items-center gap-2 border-2 border-white/30 text-white font-semibold px-7 py-3.5 rounded-xl hover:bg-white/10 transition-colors"
               >
                 Kontakt os
               </Link>
