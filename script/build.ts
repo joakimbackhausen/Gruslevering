@@ -19,8 +19,8 @@ async function buildAll() {
       "process.env.NODE_ENV": '"production"',
     },
     minify: true,
-    // Bundle everything - no externals needed for production
-    external: [],
+    // Keep node_modules as external - they're installed at runtime
+    external: ["drizzle-orm", "drizzle-orm/*", "drizzle-zod", "postgres", "bcrypt", "zod"],
     logLevel: "info",
   });
 }
