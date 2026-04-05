@@ -28,6 +28,7 @@ export async function registerRoutes(
       if (featured === 'true') {
         products = products.filter(p => p.featured);
       }
+      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
       res.json(products);
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -53,6 +54,7 @@ export async function registerRoutes(
   app.get('/api/categories', async (req, res) => {
     try {
       const categories = await fetchCategories();
+      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
       res.json(categories);
     } catch (err) {
       console.error('Error fetching categories:', err);
@@ -135,22 +137,86 @@ export async function registerRoutes(
     }
   });
 
-  // Image proxy to avoid CORS issues with external CDN
-  app.get("/api/image-proxy", async (req, res) => {
+  // In-memory image cache (LRU-style, max 200 entries / ~100MB)
+  const imageCache = new Map<string, { buffer: Buffer; contentType: string; ts: number }>();
+  const IMAGE_CACHE_MAX = 200;
+  const IMAGE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  function pruneImageCache() {
+    if (imageCache.size <= IMAGE_CACHE_MAX) return;
+    // Remove oldest entries
+    const sorted = Array.from(imageCache.entries()).sort((a, b) => a[1].ts - b[1].ts);
+    const toRemove = sorted.slice(0, imageCache.size - IMAGE_CACHE_MAX);
+    for (const [key] of toRemove) imageCache.delete(key);
+  }
+
+  // Optimizing image proxy — resizes, converts to WebP, and caches in memory
+  app.get("/api/img", async (req, res) => {
     const url = req.query.url as string;
-    if (!url || (!url.startsWith("https://shop86014.sfstatic.io/") && !url.startsWith("https://") )) {
+    const width = Math.min(Math.max(parseInt(req.query.w as string) || 600, 32), 1600);
+    const quality = Math.min(Math.max(parseInt(req.query.q as string) || 80, 10), 100);
+
+    if (!url || !url.startsWith("https://")) {
       return res.status(400).json({ error: "Invalid image URL" });
     }
+
+    const acceptsWebP = (req.headers.accept || "").includes("image/webp");
+    const format = acceptsWebP ? "webp" : "jpeg";
+    const cacheKey = `${url}|${width}|${quality}|${format}`;
+
+    // Serve from memory cache
+    const cached = imageCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < IMAGE_CACHE_TTL) {
+      res.setHeader("Content-Type", cached.contentType);
+      res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+      res.setHeader("Vary", "Accept");
+      res.setHeader("X-Cache", "HIT");
+      return res.send(cached.buffer);
+    }
+
     try {
+      const sharp = (await import("sharp")).default;
       const response = await fetch(url);
       if (!response.ok) return res.status(response.status).send("Image not found");
-      const contentType = response.headers.get("content-type") || "image/jpeg";
+
+      const inputBuffer = Buffer.from(await response.arrayBuffer());
+      let pipeline = sharp(inputBuffer).resize(width, width, {
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+
+      let contentType: string;
+      if (acceptsWebP) {
+        pipeline = pipeline.webp({ quality });
+        contentType = "image/webp";
+      } else {
+        pipeline = pipeline.jpeg({ quality, mozjpeg: true });
+        contentType = "image/jpeg";
+      }
+
+      const outputBuffer = await pipeline.toBuffer();
+
+      // Store in memory cache
+      imageCache.set(cacheKey, { buffer: outputBuffer, contentType, ts: Date.now() });
+      pruneImageCache();
+
       res.setHeader("Content-Type", contentType);
-      res.setHeader("Cache-Control", "public, max-age=86400");
-      const buffer = Buffer.from(await response.arrayBuffer());
-      res.send(buffer);
-    } catch {
-      res.status(500).send("Failed to fetch image");
+      res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+      res.setHeader("Vary", "Accept");
+      res.setHeader("X-Cache", "MISS");
+      res.send(outputBuffer);
+    } catch (err) {
+      // Fallback: serve original image without processing
+      try {
+        const response = await fetch(url);
+        if (!response.ok) return res.status(response.status).send("Image not found");
+        const contentType = response.headers.get("content-type") || "image/jpeg";
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.send(Buffer.from(await response.arrayBuffer()));
+      } catch {
+        res.status(500).send("Failed to fetch image");
+      }
     }
   });
 

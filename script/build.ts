@@ -20,7 +20,7 @@ async function buildAll() {
     },
     minify: true,
     // Keep node_modules as external - they're installed at runtime
-    external: ["drizzle-orm", "drizzle-orm/*", "drizzle-zod", "postgres", "bcrypt", "zod"],
+    external: ["drizzle-orm", "drizzle-orm/*", "drizzle-zod", "postgres", "bcrypt", "zod", "sharp"],
     logLevel: "info",
   });
 }

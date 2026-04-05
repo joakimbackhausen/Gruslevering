@@ -121,6 +121,7 @@ function ProductCard({ product }: { product: Product }) {
             src={product.image}
             alt={product.title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            width={250}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
@@ -435,11 +436,13 @@ export default function ProductDetail() {
               {/* Main image — square, subtle border */}
               <div className="relative aspect-square bg-white rounded-2xl overflow-hidden border border-gray-200">
                 {images.length > 0 && images[0] ? (
-                  <img
+                  <SmartImage
                     key={currentImageIndex}
                     src={images[currentImageIndex]}
                     alt={product.title}
                     className="w-full h-full object-cover"
+                    width={700}
+                    priority
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
@@ -466,10 +469,11 @@ export default function ProductDetail() {
                           : 'border-gray-200 opacity-50 hover:opacity-80'
                       }`}
                     >
-                      <img
+                      <SmartImage
                         src={src}
                         alt={`Billede ${index + 1}`}
                         className="w-full h-full object-cover"
+                        width={80}
                       />
                     </button>
                   ))}

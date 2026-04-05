@@ -121,6 +121,7 @@ function ProductCard({ product }: { product: Product }) {
             src={product.image}
             alt={product.title}
             className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+            width={300}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">

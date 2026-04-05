@@ -120,6 +120,7 @@ function ProductCard({ product }: { product: Product }) {
             src={product.image}
             alt={product.title}
             className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
+            width={300}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
@@ -256,9 +257,11 @@ export default function Home() {
             {/* Background image */}
             {/* Hero image - delivery truck from gruslevering.dk */}
             <img
-              src="https://gruslevering.dk/wp-content/uploads/2026/03/image.jpg"
+              src="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400"
               alt="Grus, sten og jord leveret til døren"
               className="absolute inset-0 w-full h-full object-cover"
+              fetchPriority="high"
+              decoding="sync"
             />
             {/* Dark overlay for readability */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
@@ -389,6 +392,7 @@ export default function Home() {
                         src={cat.image}
                         alt={cat.name}
                         className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500"
+                        width={350}
                       />
                     ) : (
                       <div
