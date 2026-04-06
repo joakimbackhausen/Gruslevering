@@ -127,7 +127,8 @@ export default function Checkout() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: items.map((item) => ({
-            wcProductId: item.wcProductId || Number(item.id),
+            productId: item.id,
+            wcProductId: item.wcProductId || undefined,
             wcVariationId: item.wcVariationId || undefined,
             quantity: item.quantity,
           })),

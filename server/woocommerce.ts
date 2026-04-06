@@ -117,10 +117,34 @@ interface ShippingAddress {
 }
 
 /**
+ * Extract Set-Cookie headers from a response, supporting both modern and legacy Node.js.
+ */
+function getSetCookieHeaders(res: Response): string[] {
+  // Modern Node.js (>= 18.14)
+  if (typeof res.headers.getSetCookie === "function") {
+    return res.headers.getSetCookie();
+  }
+  // Fallback: raw headers iteration
+  const cookies: string[] = [];
+  res.headers.forEach((value, key) => {
+    if (key.toLowerCase() === "set-cookie") {
+      cookies.push(value);
+    }
+  });
+  // Some implementations join multiple set-cookie headers with ", " — try to split them
+  if (cookies.length === 1 && cookies[0].includes(", ")) {
+    // Only split on ", " if it's between cookie boundaries (name=value pairs)
+    const parts = cookies[0].split(/,\s*(?=[A-Za-z_]+=)/);
+    if (parts.length > 1) return parts;
+  }
+  return cookies;
+}
+
+/**
  * Collect cookies from a fetch response as a combined string for forwarding.
  */
 function collectCookies(res: Response, existingCookies: string): string {
-  const setCookies = res.headers.getSetCookie?.() || [];
+  const setCookies = getSetCookieHeaders(res);
   if (setCookies.length === 0) return existingCookies;
 
   // Parse existing cookies into a map
@@ -193,11 +217,15 @@ export async function calculateShippingRates(
   });
 
   // 2. Add each item to the cart
+  let addedCount = 0;
   for (const item of items) {
+    const productId = item.wcVariationId || item.wcProductId;
     const addBody: Record<string, unknown> = {
-      id: item.wcVariationId || item.wcProductId,
+      id: productId,
       quantity: item.quantity,
     };
+
+    console.log(`[store-api] Adding item: id=${productId} (wcProduct=${item.wcProductId}, wcVariation=${item.wcVariationId || 'none'}), qty=${item.quantity}`);
 
     const addRes = await fetch(`${STORE_API_BASE}/cart/add-item`, {
       method: "POST",
@@ -209,8 +237,15 @@ export async function calculateShippingRates(
 
     if (!addRes.ok) {
       const text = await addRes.text().catch(() => "");
-      console.warn(`[store-api] Failed to add item ${item.wcProductId}: ${addRes.status} ${text.slice(0, 200)}`);
+      console.warn(`[store-api] Failed to add item ${productId}: ${addRes.status} ${text.slice(0, 300)}`);
+    } else {
+      addedCount++;
     }
+  }
+
+  if (addedCount === 0) {
+    console.error(`[store-api] No items could be added to cart. Check WC product IDs.`);
+    throw new Error("Ingen produkter kunne tilf\u00f8jes til kurven for fragtberegning");
   }
 
   // 3. Update shipping address to trigger rate calculation

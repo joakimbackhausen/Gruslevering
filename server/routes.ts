@@ -95,7 +95,7 @@ export async function registerRoutes(
   app.post('/api/shipping/calculate', async (req, res) => {
     try {
       const { items, address } = req.body as {
-        items: { wcProductId: number; wcVariationId?: number; quantity: number }[];
+        items: { wcProductId?: number; wcVariationId?: number; quantity: number; productId?: string }[];
         address: { address_1?: string; city?: string; postcode: string; country?: string };
       };
 
@@ -106,7 +106,31 @@ export async function registerRoutes(
         return res.status(400).json({ error: 'Shipping address with postcode is required' });
       }
 
-      const shippingPackages = await calculateShippingRates(items, address);
+      // Resolve WC product IDs: if wcProductId is missing, look up from our DB cache
+      const allProducts = await fetchAllProducts();
+      const resolvedItems = items.map((item) => {
+        let wcProductId = item.wcProductId;
+        if (!wcProductId && item.productId) {
+          const product = allProducts.find((p) => p.id === item.productId);
+          if (product?.wcId) wcProductId = product.wcId;
+        }
+        // If still no wcProductId, try using the number directly (might be PG ID = WC ID in some cases)
+        if (!wcProductId) {
+          const numId = Number(item.productId || item.wcProductId);
+          if (!isNaN(numId)) wcProductId = numId;
+        }
+        return {
+          wcProductId: wcProductId || 0,
+          wcVariationId: item.wcVariationId,
+          quantity: item.quantity,
+        };
+      }).filter((i) => i.wcProductId > 0);
+
+      if (resolvedItems.length === 0) {
+        return res.status(400).json({ error: 'Could not resolve WooCommerce product IDs' });
+      }
+
+      const shippingPackages = await calculateShippingRates(resolvedItems, address);
 
       // Flatten all rates from all packages and format for frontend
       const rates = shippingPackages.flatMap((pkg) =>
