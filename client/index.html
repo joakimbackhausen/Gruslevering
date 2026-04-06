@@ -27,23 +27,81 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
 
-    <!-- Preconnect to external origins -->
-    <link rel="preconnect" href="https://gruslevering.dk" crossorigin>
-    <link rel="dns-prefetch" href="https://gruslevering.dk">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- Preconnect only to origins actually used during initial load -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <!-- Non-render-blocking font loading -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet"></noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"></noscript>
 
     <!-- Preload hero image for faster LCP -->
-    <link rel="preload" as="image" href="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=800" media="(max-width: 768px)">
+    <link rel="preload" as="image" href="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600" media="(max-width: 768px)">
     <link rel="preload" as="image" href="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400" media="(min-width: 769px)">
+
+    <!-- Inline critical CSS for instant FCP -->
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'DM Sans',system-ui,-apple-system,sans-serif;background:#fff;color:#1a1a2e}
+      #root-skeleton{min-height:100vh}
+      .sk-header{position:fixed;top:0;left:0;right:0;z-index:50;background:#fff;border-bottom:1px solid #e5e7eb}
+      .sk-usp{background:#2B5B2B;height:36px}
+      .sk-nav{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;max-width:1400px;margin:0 auto}
+      .sk-logo{height:40px;width:auto}
+      .sk-hero{margin-top:92px;padding:0 16px}
+      .sk-hero-inner{position:relative;border-radius:16px;overflow:hidden;min-height:300px;background:#e5e7eb}
+      .sk-hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+      .sk-hero-overlay{position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.6),rgba(0,0,0,.3),transparent)}
+      .sk-hero-text{position:relative;z-index:1;padding:56px 32px;max-width:600px}
+      .sk-hero-text h1{font-weight:800;color:#fff;font-size:28px;line-height:1.05;text-transform:uppercase;margin-bottom:20px}
+      .sk-hero-text p{color:rgba(255,255,255,.8);font-size:16px;margin-bottom:32px}
+      .sk-btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;padding:16px 32px;border-radius:12px;color:#fff;background:#2B5B2B;text-decoration:none;font-size:16px}
+      @media(min-width:1024px){.sk-hero{margin-top:164px}.sk-hero-inner{min-height:500px}.sk-hero-text h1{font-size:56px}.sk-hero-text{padding:80px 64px}}
+    </style>
   </head>
   <body>
+    <!-- Server-rendered skeleton for instant FCP — replaced by React -->
+    <div id="root-skeleton">
+      <div class="sk-header">
+        <div class="sk-usp"></div>
+        <div class="sk-nav">
+          <img src="/images/gruslevering-logo.png" alt="Gruslevering.dk" class="sk-logo" width="149" height="40">
+        </div>
+      </div>
+      <div class="sk-hero">
+        <div class="sk-hero-inner">
+          <img
+            src="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600"
+            srcset="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600 600w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400 1400w"
+            sizes="100vw"
+            alt="Grus, sten og jord leveret til døren"
+            class="sk-hero-img"
+            fetchpriority="high"
+            decoding="sync"
+            width="1400" height="500"
+          >
+          <div class="sk-hero-overlay"></div>
+          <div class="sk-hero-text">
+            <h1>Grus, sten og jord leveret direkte til døren</h1>
+            <p>Big bags i højkvalitet – Fri levering i hele landet</p>
+            <a href="/shop" class="sk-btn">Se alle produkter &#8594;</a>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Remove skeleton once React mounts
+      document.addEventListener('DOMContentLoaded', function() {
+        var check = setInterval(function() {
+          if (document.getElementById('root').children.length > 0) {
+            var sk = document.getElementById('root-skeleton');
+            if (sk) sk.remove();
+            clearInterval(check);
+          }
+        }, 50);
+      });
+    </script>
   </body>
 </html>

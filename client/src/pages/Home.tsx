@@ -112,13 +112,14 @@ function ProductCard({ product }: { product: Product }) {
       className="group block bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-gray-200 hover:-translate-y-1"
     >
       {/* Image */}
-      <div className="relative aspect-square overflow-hidden">
+      <div className="relative aspect-square overflow-hidden bg-gray-50">
         {product.image ? (
           <SmartImage
             src={product.image}
             alt={product.title}
             className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-            width={400}
+            width={250}
+            sizes="(max-width: 640px) 45vw, 260px"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300 text-sm">
@@ -271,9 +272,9 @@ export default function Home() {
             {/* Background image */}
             {/* Hero image - delivery truck from gruslevering.dk */}
             <img
-              src="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=800"
-              srcSet="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600 600w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=800 800w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400 1400w"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1400px"
+              src="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600"
+              srcSet="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=400 400w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600 600w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400 1400w"
+              sizes="(max-width: 640px) 100vw, 1400px"
               alt="Grus, sten og jord leveret til døren"
               className="absolute inset-0 w-full h-full object-cover"
               fetchPriority="high"
@@ -432,7 +433,8 @@ export default function Home() {
                         src={cat.image || categoryFallbackImages[cat.slug]}
                         alt={cat.name}
                         className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500"
-                        width={350}
+                        width={200}
+                        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 25vw"
                       />
                     ) : (
                       <div
