@@ -323,8 +323,24 @@ export default function ProductDetail() {
       return;
 
     const variantString = Object.values(selectedVariants).join(' / ');
+
+    // Resolve WC variation ID from selected variant
+    let wcVariationId: number | undefined;
+    if (product.variants && product.variants.length > 0) {
+      // For single-attribute products (most common), find the matching option
+      const group = product.variants[0];
+      const selectedOption = group.options.find(
+        (o) => o.name === selectedVariants[group.label],
+      );
+      if (selectedOption?.wcVariationId) {
+        wcVariationId = selectedOption.wcVariationId;
+      }
+    }
+
     addItem({
       id: product.id,
+      wcProductId: product.wcId ?? undefined,
+      wcVariationId,
       title: product.title,
       price: currentPrice,
       image: product.image,

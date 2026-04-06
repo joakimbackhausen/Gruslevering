@@ -98,6 +98,7 @@ function ProductCard({ product }: { product: Product }) {
     if (hasVariants) return;
     addItem({
       id: product.id,
+      wcProductId: product.wcId ?? undefined,
       title: product.title,
       price: effectivePrice,
       image: product.image,

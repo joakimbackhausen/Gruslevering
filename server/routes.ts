@@ -9,7 +9,7 @@ import {
   createOrder,
 } from "./data-source";
 import type { CreateOrderInput } from "./data-source";
-import { wcGet } from "./woocommerce";
+import { wcGet, calculateShippingRates } from "./woocommerce";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -88,6 +88,49 @@ export async function registerRoutes(
     } catch (err) {
       console.error('Error creating order:', err);
       res.status(500).json({ error: 'Failed to create order' });
+    }
+  });
+
+  // POST /api/shipping/calculate — calculate available shipping rates via WC Store API
+  app.post('/api/shipping/calculate', async (req, res) => {
+    try {
+      const { items, address } = req.body as {
+        items: { wcProductId: number; wcVariationId?: number; quantity: number }[];
+        address: { address_1?: string; city?: string; postcode: string; country?: string };
+      };
+
+      if (!items || items.length === 0) {
+        return res.status(400).json({ error: 'Cart must have at least one item' });
+      }
+      if (!address?.postcode) {
+        return res.status(400).json({ error: 'Shipping address with postcode is required' });
+      }
+
+      const shippingPackages = await calculateShippingRates(items, address);
+
+      // Flatten all rates from all packages and format for frontend
+      const rates = shippingPackages.flatMap((pkg) =>
+        pkg.shipping_rates.map((rate) => ({
+          rateId: rate.rate_id,
+          name: rate.name,
+          description: rate.description || '',
+          methodId: rate.method_id,
+          instanceId: rate.instance_id,
+          // Price is in minor units (øre) — convert to DKK
+          price: parseInt(rate.price, 10) / Math.pow(10, rate.currency_minor_unit || 2),
+          priceFormatted:
+            parseInt(rate.price, 10) === 0
+              ? 'Gratis'
+              : `${(parseInt(rate.price, 10) / Math.pow(10, rate.currency_minor_unit || 2)).toLocaleString('da-DK', { minimumFractionDigits: 2 })} kr.`,
+          deliveryTime: rate.delivery_time || '',
+          selected: rate.selected,
+        }))
+      );
+
+      res.json({ rates });
+    } catch (err) {
+      console.error('Error calculating shipping:', err);
+      res.status(500).json({ error: 'Failed to calculate shipping rates' });
     }
   });
 

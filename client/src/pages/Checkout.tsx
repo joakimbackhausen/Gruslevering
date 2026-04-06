@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useCart, getEffectivePrice } from '@/contexts/CartContext';
 import Header from '@/components/Header';
@@ -12,7 +12,9 @@ import {
   ShoppingBag,
   Truck,
   MapPin,
+  Package,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 
 function formatPrice(price: number): string {
@@ -22,7 +24,17 @@ function formatPrice(price: number): string {
   });
 }
 
-type DeliveryMethod = 'bigbag' | 'tipvogn' | 'pickup';
+interface ShippingRate {
+  rateId: string;
+  name: string;
+  description: string;
+  methodId: string;
+  instanceId: number;
+  price: number;
+  priceFormatted: string;
+  deliveryTime: string;
+  selected: boolean;
+}
 
 interface CustomerForm {
   firstName: string;
@@ -62,7 +74,10 @@ export default function Checkout() {
   const [step, setStep] = useState(1);
   const [customer, setCustomer] = useState<CustomerForm>(emptyCustomer);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('bigbag');
+  const [selectedShippingRate, setSelectedShippingRate] = useState<ShippingRate | null>(null);
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
@@ -97,17 +112,81 @@ export default function Checkout() {
     return Object.keys(errors).length === 0;
   }
 
+  /* ── Fetch shipping rates from WC Store API ─────────────── */
+  const fetchShippingRates = useCallback(async () => {
+    if (items.length === 0 || !customer.zip) return;
+
+    setShippingLoading(true);
+    setShippingError('');
+    setShippingRates([]);
+    setSelectedShippingRate(null);
+
+    try {
+      const res = await fetch('/api/shipping/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            wcProductId: item.wcProductId || Number(item.id),
+            wcVariationId: item.wcVariationId || undefined,
+            quantity: item.quantity,
+          })),
+          address: {
+            address_1: customer.address,
+            city: customer.city,
+            postcode: customer.zip.trim(),
+            country: 'DK',
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Kunne ikke beregne fragtpriser');
+      }
+
+      const data = await res.json();
+      const rates: ShippingRate[] = data.rates || [];
+
+      setShippingRates(rates);
+
+      // Auto-select the first rate (or the one WC marked as selected)
+      const preSelected = rates.find((r) => r.selected) || rates[0];
+      if (preSelected) {
+        setSelectedShippingRate(preSelected);
+      }
+    } catch (err: any) {
+      setShippingError(err.message || 'Kunne ikke hente fragtmuligheder');
+    } finally {
+      setShippingLoading(false);
+    }
+  }, [items, customer.zip, customer.address, customer.city]);
+
+  // Fetch shipping rates when entering step 3
+  useEffect(() => {
+    if (step === 3) {
+      fetchShippingRates();
+    }
+  }, [step, fetchShippingRates]);
+
   /* ── Submit order ───────────────────────────────────────── */
   async function submitOrder() {
+    if (!selectedShippingRate) {
+      setSubmitError('V\u00e6lg venligst en leveringsmetode');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError('');
 
-    // Map frontend keys to DB enum values
-    const deliveryMethodMap: Record<DeliveryMethod, string> = {
-      bigbag: 'bigbag',
-      tipvogn: 'tipvogn',
-      pickup: 'afhentning',
-    };
+    // Map shipping method to delivery method enum for our DB
+    const methodId = selectedShippingRate.methodId;
+    let deliveryMethod = 'bigbag';
+    if (methodId === 'local_pickup') {
+      deliveryMethod = 'afhentning';
+    } else if (selectedShippingRate.name.toLowerCase().includes('tipvogn')) {
+      deliveryMethod = 'tipvogn';
+    }
 
     try {
       const body = {
@@ -118,9 +197,14 @@ export default function Checkout() {
         customerZip: customer.zip,
         customerCity: customer.city,
         customerCompany: customer.company || undefined,
-        deliveryMethod: deliveryMethodMap[deliveryMethod],
+        deliveryMethod,
+        shippingRateId: selectedShippingRate.rateId,
+        shippingMethodTitle: selectedShippingRate.name,
+        shippingTotal: selectedShippingRate.price.toFixed(2),
         lines: items.map((item) => ({
           productId: item.id,
+          wcProductId: item.wcProductId || undefined,
+          wcVariationId: item.wcVariationId || undefined,
           title: item.title,
           sku: item.sku || '',
           qty: item.quantity,
@@ -142,10 +226,8 @@ export default function Checkout() {
 
       const result = await res.json();
       if (result.paymentUrl) {
-        // Redirect to Worldline payment page
         window.location.href = result.paymentUrl;
       } else {
-        // No payment needed (free order / pickup)
         navigate(`/ordre-bekraeftelse?order_id=${result.orderId}`);
       }
     } catch (err: any) {
@@ -183,36 +265,14 @@ export default function Checkout() {
     }
   }
 
-  /* ── Delivery options ──────────────────────────────────── */
-  const deliveryOptions: {
-    key: DeliveryMethod;
-    icon: React.ReactNode;
-    title: string;
-    price: string;
-    desc: string;
-  }[] = [
-    {
-      key: 'bigbag',
-      icon: <Truck className="w-6 h-6" />,
-      title: 'Bigbag-levering',
-      price: 'Fri',
-      desc: 'Leveres med kran direkte til din adresse',
-    },
-    {
-      key: 'tipvogn',
-      icon: <Truck className="w-6 h-6" />,
-      title: 'Tipvogn-levering',
-      price: 'Pris efter aftale',
-      desc: 'For st\u00f8rre ordrer, kontakt os',
-    },
-    {
-      key: 'pickup',
-      icon: <MapPin className="w-6 h-6" />,
-      title: 'Afhentning i Tylstrup',
-      price: 'Gratis',
-      desc: 'Tylstrupvej 1, 9382 Tylstrup',
-    },
-  ];
+  /* ── Shipping icon helper ────────────────────────────────── */
+  function getShippingIcon(rate: ShippingRate) {
+    if (rate.methodId === 'local_pickup') return <MapPin className="w-6 h-6" />;
+    if (rate.methodId === 'shipmondo') return <Package className="w-6 h-6" />;
+    return <Truck className="w-6 h-6" />;
+  }
+
+  const shippingCost = selectedShippingRate?.price ?? 0;
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
@@ -557,57 +617,103 @@ export default function Checkout() {
                       V&aelig;lg leveringsmetode
                     </h2>
 
-                    <div className="space-y-3 mb-8">
-                      {deliveryOptions.map((opt) => (
-                        <button
-                          key={opt.key}
-                          onClick={() => setDeliveryMethod(opt.key)}
-                          className={`w-full flex items-start gap-4 p-5 rounded-xl border-2 text-left transition-all ${
-                            deliveryMethod === opt.key
-                              ? 'border-green-500 bg-green-50/50 shadow-sm'
-                              : 'border-gray-200 hover:border-gray-300 bg-white'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 flex-shrink-0 mt-0.5">
-                            <div
-                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                deliveryMethod === opt.key
-                                  ? 'border-green-500'
-                                  : 'border-gray-300'
+                    {/* Loading state */}
+                    {shippingLoading && (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 text-green-600 animate-spin mb-4" />
+                        <p className="text-[15px] text-gray-500">Beregner fragtmuligheder...</p>
+                        <p className="text-[13px] text-gray-400 mt-1">
+                          Baseret p&aring; din adresse og kurv
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Error state */}
+                    {!shippingLoading && shippingError && (
+                      <div className="mb-6 p-5 rounded-xl bg-red-50 border border-red-200">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-[14px] font-medium text-red-700 mb-1">
+                              Kunne ikke hente fragtmuligheder
+                            </p>
+                            <p className="text-[13px] text-red-600">{shippingError}</p>
+                            <button
+                              onClick={fetchShippingRates}
+                              className="mt-3 text-[13px] font-medium text-red-700 underline hover:text-red-800"
+                            >
+                              Pr&oslash;v igen
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Shipping rates */}
+                    {!shippingLoading && shippingRates.length > 0 && (
+                      <div className="space-y-3 mb-8">
+                        {shippingRates.map((rate) => {
+                          const isSelected = selectedShippingRate?.rateId === rate.rateId;
+                          return (
+                            <button
+                              key={rate.rateId}
+                              onClick={() => setSelectedShippingRate(rate)}
+                              className={`w-full flex items-start gap-4 p-5 rounded-xl border-2 text-left transition-all ${
+                                isSelected
+                                  ? 'border-green-500 bg-green-50/50 shadow-sm'
+                                  : 'border-gray-200 hover:border-gray-300 bg-white'
                               }`}
                             >
-                              {deliveryMethod === opt.key && (
-                                <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                              )}
-                            </div>
-                            <span
-                              className={
-                                deliveryMethod === opt.key ? 'text-green-600' : 'text-gray-400'
-                              }
-                            >
-                              {opt.icon}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[15px] font-semibold text-[#1a1a1a]">
-                                {opt.title}
-                              </span>
-                              <span
-                                className={`text-[14px] font-medium ${
-                                  opt.price === 'Fri' || opt.price === 'Gratis'
-                                    ? 'text-green-600'
-                                    : 'text-gray-500'
-                                }`}
-                              >
-                                {opt.price}
-                              </span>
-                            </div>
-                            <p className="text-[13px] text-gray-500 mt-1">{opt.desc}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+                              <div className="flex items-center gap-3 flex-shrink-0 mt-0.5">
+                                <div
+                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                    isSelected ? 'border-green-500' : 'border-gray-300'
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                  )}
+                                </div>
+                                <span className={isSelected ? 'text-green-600' : 'text-gray-400'}>
+                                  {getShippingIcon(rate)}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[15px] font-semibold text-[#1a1a1a]">
+                                    {rate.name}
+                                  </span>
+                                  <span
+                                    className={`text-[14px] font-medium ${
+                                      rate.price === 0 ? 'text-green-600' : 'text-[#1a1a1a]'
+                                    }`}
+                                  >
+                                    {rate.priceFormatted}
+                                  </span>
+                                </div>
+                                {(rate.description || rate.deliveryTime) && (
+                                  <p className="text-[13px] text-gray-500 mt-1">
+                                    {rate.deliveryTime || rate.description}
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* No rates available */}
+                    {!shippingLoading && !shippingError && shippingRates.length === 0 && (
+                      <div className="mb-6 p-5 rounded-xl bg-yellow-50 border border-yellow-200">
+                        <p className="text-[14px] text-yellow-700">
+                          Ingen fragtmuligheder fundet for din adresse. Kontakt os p&aring;{' '}
+                          <a href="tel:+4572494444" className="font-medium underline">
+                            +45 72 49 44 44
+                          </a>
+                        </p>
+                      </div>
+                    )}
 
                     {submitError && (
                       <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-[14px] text-red-700">
@@ -624,7 +730,7 @@ export default function Checkout() {
                       </button>
                       <button
                         onClick={submitOrder}
-                        disabled={submitting}
+                        disabled={submitting || shippingLoading || !selectedShippingRate}
                         className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-3.5 px-8 rounded-lg transition-colors flex items-center gap-2"
                       >
                         {submitting ? (
@@ -690,11 +796,11 @@ export default function Checkout() {
                           {formatPrice(totalPrice * 0.25)} kr
                         </span>
                       </div>
-                      {step >= 3 && (
+                      {step >= 3 && selectedShippingRate && (
                         <div className="flex justify-between text-[14px]">
                           <span className="text-gray-500">Levering</span>
-                          <span className="text-green-600 font-medium">
-                            {deliveryMethod === 'tipvogn' ? 'Efter aftale' : 'Gratis'}
+                          <span className={`font-medium ${shippingCost === 0 ? 'text-green-600' : 'text-[#1a1a1a]'}`}>
+                            {selectedShippingRate.priceFormatted}
                           </span>
                         </div>
                       )}
@@ -703,7 +809,7 @@ export default function Checkout() {
                           Total (inkl. moms)
                         </span>
                         <span className="text-[18px] font-bold text-[#1a1a1a]">
-                          {formatPrice(totalPrice * 1.25)} kr
+                          {formatPrice((totalPrice + shippingCost) * 1.25)} kr
                         </span>
                       </div>
                     </div>

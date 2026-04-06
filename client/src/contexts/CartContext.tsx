@@ -2,14 +2,16 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 
 export interface CartItem {
   id: string;
+  wcProductId?: number;       // WooCommerce product ID
+  wcVariationId?: number;     // WooCommerce variation ID (for variable products)
   title: string;
-  price: number;          // Final price including variant diff
+  price: number;              // Final price including variant diff
   quantity: number;
   image: string;
   sku?: string;
-  variant?: string;       // Display string, e.g. "1000kg"
+  variant?: string;           // Display string, e.g. "1000kg"
   variantSelections?: Record<string, string>;  // { "Mængde": "1000kg" }
-  unit?: string;          // bigbag, sæk, etc.
+  unit?: string;              // bigbag, sæk, etc.
   tieredPricing?: { minQty: number; maxQty: number | null; price: number }[] | null;
 }
 

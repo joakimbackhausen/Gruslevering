@@ -27,6 +27,7 @@ export interface VariantOption {
   image?: string;
   skuSuffix?: string;
   inStock: boolean;
+  wcVariationId?: number;
 }
 
 export interface TieredPrice {
@@ -37,6 +38,7 @@ export interface TieredPrice {
 
 export interface Product {
   id: string;
+  wcId: number | null;
   title: string;
   slug: string;
   sku: string;
@@ -73,6 +75,8 @@ export interface Category {
 
 export interface OrderLine {
   productId: string;
+  wcProductId?: number;
+  wcVariationId?: number;
   title: string;
   sku: string;
   qty: number;
@@ -90,6 +94,9 @@ export interface CreateOrderInput {
   customerCompany?: string;
   lines: OrderLine[];
   deliveryMethod: string;
+  shippingRateId?: string;
+  shippingMethodTitle?: string;
+  shippingTotal?: string;
   notes?: string;
   discountCode?: string;
 }
@@ -217,6 +224,7 @@ async function refreshCache(): Promise<void> {
 
       return {
         id: String(p.id),
+        wcId: p.wcId ?? null,
         title: decodeEntities(p.title),
         slug: p.slug || "",
         sku: p.sku || "",
@@ -384,10 +392,26 @@ export async function createOrder(
       company: input.customerCompany || "",
       country: "DK",
     },
-    line_items: input.lines.map((line) => ({
-      product_id: Number(line.productId),
-      quantity: line.qty,
-    })),
+    line_items: input.lines.map((line) => {
+      const item: Record<string, unknown> = {
+        product_id: line.wcProductId || Number(line.productId),
+        quantity: line.qty,
+      };
+      if (line.wcVariationId) {
+        item.variation_id = line.wcVariationId;
+      }
+      return item;
+    }),
+    shipping_lines: input.shippingRateId
+      ? [
+          {
+            method_id: input.shippingRateId.split(":")[0] || input.shippingRateId,
+            method_title: input.shippingMethodTitle || input.deliveryMethod,
+            total: input.shippingTotal || "0",
+            instance_id: parseInt(input.shippingRateId.split(":")[1]) || undefined,
+          },
+        ]
+      : [],
     customer_note: input.notes || "",
   });
 
@@ -435,6 +459,7 @@ function mapDbProduct(
 ): Product {
   return {
     id: String(p.id),
+    wcId: p.wcId ?? null,
     title: decodeEntities(p.title),
     slug: p.slug || "",
     sku: p.sku || "",
@@ -598,6 +623,7 @@ function buildVariantsFromWc(
       name: label,
       priceDiff: Math.round((vPrice - basePrice) * 100) / 100,
       inStock: v.stock_status === "instock",
+      wcVariationId: v.id,
     };
   });
 

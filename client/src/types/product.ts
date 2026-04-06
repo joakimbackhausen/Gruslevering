@@ -9,6 +9,7 @@ export interface VariantOption {
   image?: string;
   skuSuffix?: string;
   inStock: boolean;
+  wcVariationId?: number;
 }
 
 export interface TieredPrice {
@@ -19,6 +20,7 @@ export interface TieredPrice {
 
 export interface Product {
   id: string;
+  wcId: number | null;
   title: string;
   slug: string;
   sku: string;

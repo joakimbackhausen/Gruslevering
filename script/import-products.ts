@@ -309,6 +309,7 @@ function buildProductPayload(
         name: label,
         priceDiff: Math.round((vPrice - basePriceValue) * 100) / 100,
         inStock: v.stock_status === "instock",
+        wcVariationId: v.id,
       };
     });
 
