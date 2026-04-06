@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useCart } from '@/contexts/CartContext';
-import { useQuery } from '@tanstack/react-query';
 
 const CartDrawer = lazy(() => import('./CartDrawer'));
 import {
@@ -16,14 +15,326 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
-interface Category {
-  id: number;
-  slug: string;
-  name: string;
-  image: string;
-  count: number;
-  url: string;
-  parentId: number | null;
+/* ------------------------------------------------------------------ */
+/*  Menu structure — matches the curated WordPress nav on gruslevering.dk */
+/* ------------------------------------------------------------------ */
+
+interface MenuChild {
+  label: string;
+  href: string;
+}
+
+interface MenuColumn {
+  label: string;
+  href: string;
+  children?: MenuChild[];
+}
+
+interface MenuItem {
+  label: string;
+  href: string;
+  columns?: MenuColumn[];
+}
+
+const MAIN_MENU: MenuItem[] = [
+  {
+    label: 'Granitskærver & sten',
+    href: '/shop/granitskaerver-sten-pyntesten',
+    columns: [
+      {
+        label: 'Granitskærver',
+        href: '/shop/granitskaerver-sten-pyntesten/granitskaerver',
+        children: [
+          { label: 'Sorte Granitskærver', href: '/shop/granitskaerver-sten-pyntesten/sorte-granitskaerver' },
+          { label: 'Grå Granitskærver', href: '/shop/granitskaerver-sten-pyntesten/gra-granitskaerver' },
+          { label: 'Røde Granitskærver', href: '/shop/granitskaerver-sten-pyntesten/rode-granitskaerver' },
+          { label: 'Ukrudtsduge', href: '/shop/hus-og-have/ukrudtsduge' },
+        ],
+      },
+      {
+        label: 'Stenmel',
+        href: '/shop/granitskaerver-sten-pyntesten/stenmel',
+        children: [
+          { label: 'Grå stenmel', href: '/shop/granitskaerver-sten-pyntesten/graa-stenmel-belaegning' },
+          { label: 'Sort stenmel', href: '/shop/granitskaerver-sten-pyntesten/sort-stenmel-belaegning' },
+        ],
+      },
+      {
+        label: 'Pyntesten',
+        href: '/shop/granitskaerver-sten-pyntesten/pyntesten-kategori',
+        children: [
+          { label: 'Nøddesten', href: '/shop/granitskaerver-sten-pyntesten/noeddesten-draensten' },
+          { label: 'Perlesten', href: '/shop/granitskaerver-sten-pyntesten/perlesten-soe-sten' },
+          { label: 'Pigsten', href: '/shop/granitskaerver-sten-pyntesten/pigsten-marksten' },
+          { label: 'Pyntesten', href: '/shop/granitskaerver-sten-pyntesten/pyntesten' },
+        ],
+      },
+    ],
+  },
+  {
+    label: 'Sand & Grus',
+    href: '/shop/sand-grus',
+    columns: [
+      { label: 'Grus', href: '/shop/sand-grus/grus' },
+      { label: 'Sand', href: '/shop/sand-grus/sand' },
+    ],
+  },
+  {
+    label: 'Støbeprodukter',
+    href: '/shop/stobematerialer',
+    columns: [
+      { label: 'Støbematerialer', href: '/shop/stobematerialer' },
+      { label: 'Støbepakker', href: '/shop/stobematerialer/stobepakker' },
+      { label: 'Cement', href: '/shop/hus-og-have/cement' },
+    ],
+  },
+  {
+    label: 'Muld',
+    href: '/shop/muldjord',
+    columns: [
+      {
+        label: 'Muld og jord',
+        href: '/shop/muldjord/muld-muldjord',
+        children: [
+          { label: 'Harpet muld', href: '/shop/muldjord/harpet-muld' },
+          { label: 'Højbedsmuld', href: '/shop/muldjord/hoejbedsmuld' },
+          { label: 'Gartnermuld', href: '/shop/muldjord/gartnermuld-jord' },
+          { label: 'Allétræs muld', href: '/shop/muldjord/alletraes-muld' },
+          { label: 'Rhododendron jord', href: '/shop/muldjord/rhododendronjord' },
+          { label: 'Hækjord', href: '/shop/muldjord/haekjord' },
+          { label: 'Jordforbedring', href: '/shop/muldjord/jordforbedring' },
+          { label: 'Kartoffelmuld', href: '/shop/muldjord/kartoffelmuld' },
+          { label: 'Plantemuld', href: '/shop/muldjord/plantemuld' },
+          { label: 'Kompost', href: '/shop/muldjord/kompost' },
+          { label: 'Køkkenhavemuld', href: '/shop/muldjord/koekkenhavemuld' },
+          { label: 'Hestegødning', href: '/shop/muldjord/varmebehandlet-hestegodning' },
+          { label: 'Krydderurtemuld', href: '/shop/muldjord/krydderurtemuld' },
+          { label: 'Økologisk muld', href: '/shop/muldjord/okologisk-muld' },
+        ],
+      },
+      {
+        label: 'Topdressing',
+        href: '/shop/topdressing-graesfroe/topdressing',
+        children: [
+          { label: 'Plænepakker', href: '/shop/topdressing-graesfroe/plaenepakker' },
+          { label: 'Topdressing leret jord', href: '/shop/topdressing-graesfroe/optimal-losning-til-tung-undergrund' },
+          { label: 'Topdressing sandet jord', href: '/shop/topdressing-graesfroe/topdressing-sandet-jord' },
+          { label: 'Topdressing vækst', href: '/shop/topdressing-graesfroe/topdressing-vaekst' },
+        ],
+      },
+      {
+        label: 'Spagnum',
+        href: '/shop/muldjord/spagnum',
+        children: [
+          { label: 'Spagnum fra vildmosen', href: '/shop/muldjord/spagnum-fra-vildmosen' },
+          { label: 'Spagnum ugødet', href: '/shop/muldjord/spagnum-ugoedet' },
+          { label: 'Spagnum', href: '/shop/muldjord/gartner-spagnum' },
+          { label: 'Gødet spagnum', href: '/shop/muldjord/godet-spagnum' },
+          { label: 'Klyner', href: '/shop/muldjord/klyner' },
+        ],
+      },
+    ],
+  },
+  {
+    label: 'Bunddække',
+    href: '/shop/traeflis',
+    columns: [
+      { label: 'Barkflis', href: '/shop/traeflis/barkflis-flis-daekbark' },
+      { label: 'Kakaoflis', href: '/shop/traeflis/kakaoflis-til-haven' },
+      { label: 'Flis', href: '/shop/traeflis/flis' },
+      { label: 'Pinjebark', href: '/shop/traeflis/pinjebark-bunddaekke' },
+    ],
+  },
+  {
+    label: 'Strøelse',
+    href: '/shop/stroelse',
+    columns: [
+      { label: 'Spåner', href: '/shop/stroelse/spaner' },
+      { label: 'Tørv', href: '/shop/stroelse/toerv' },
+      { label: 'Tørvemix', href: '/shop/stroelse/toervemix' },
+      { label: 'Træpiller', href: '/shop/stroelse/traepiller-stroelse-braendsel' },
+    ],
+  },
+  {
+    label: 'Brændsel',
+    href: '/shop/braendsel',
+    columns: [
+      { label: 'Træpiller', href: '/shop/braendsel/traepiller-braendsel' },
+      { label: 'Ask', href: '/shop/braendsel/ask-braende-braendsel' },
+      { label: 'Birkebrænde', href: '/shop/braendsel/birkebraende' },
+      { label: 'Bøg', href: '/shop/braendsel/bog' },
+      { label: 'Briketter', href: '/shop/braendsel/briketter' },
+      { label: 'Eg', href: '/shop/braendsel/eg' },
+      { label: 'Elmetræ', href: '/shop/braendsel/elmetrae' },
+    ],
+  },
+  {
+    label: 'Hus og have',
+    href: '/shop/hus-og-have',
+    columns: [
+      {
+        label: 'Fugle i haven',
+        href: '/shop/hus-og-have/fugle-i-haven',
+        children: [
+          { label: 'Foderautomater', href: '/shop/hus-og-have/foderautomater' },
+          { label: 'Fuglepakker', href: '/shop/hus-og-have/fuglepakker' },
+          { label: 'Fuglehuse og fuglebade', href: '/shop/hus-og-have/fuglehuse-og-fuglebade' },
+          { label: 'Fuglefoder', href: '/shop/hus-og-have/fuglefoder' },
+        ],
+      },
+      {
+        label: 'Gødning & græsfrø',
+        href: '/shop/hus-og-have/godning-graesfroe',
+        children: [
+          { label: 'Plante- og grøntsagsgødning', href: '/shop/hus-og-have/plante-og-grontsagsgodning' },
+          { label: 'Blomsterfrø', href: '/shop/hus-og-have/blomsterfroe' },
+          { label: 'Græsfrø', href: '/shop/hus-og-have/graesfroe' },
+          { label: 'Græskanter', href: '/shop/hus-og-have/graeskanter' },
+          { label: 'Græsplæne kalk', href: '/shop/hus-og-have/graesplaene-kalk' },
+          { label: 'Plænegødning', href: '/shop/hus-og-have/plaenegodning' },
+        ],
+      },
+      {
+        label: 'Diverse til haven',
+        href: '/shop/hus-og-have/diverse-til-haven',
+        children: [
+          { label: 'Sandkasser', href: '/shop/hus-og-have/sandkasser' },
+          { label: 'Sandkassepakker', href: '/shop/sandkassepakker' },
+          { label: 'Tilbehør til sandkasser', href: '/shop/hus-og-have/tilbehor-til-sandkasser' },
+          { label: 'Ukrudtsduge', href: '/shop/hus-og-have/ukrudtsduge' },
+          { label: 'Højbede og plantekasser', href: '/shop/hus-og-have/hoejbede-og-plantekasser' },
+          { label: 'Hegn', href: '/shop/hus-og-have/hegn' },
+          { label: 'Borde og Bænke', href: '/shop/hus-og-have/borde-og-baenke' },
+          { label: 'Handsker', href: '/shop/hus-og-have/handsker' },
+          { label: 'Vandslanger og vandposer', href: '/shop/hus-og-have/vandslanger-og-vandposer' },
+          { label: 'Bålfade & pejse', href: '/shop/hus-og-have/baalfade-pejse' },
+          { label: 'Vækst & drivhuse', href: '/shop/hus-og-have/vaekst-drivhuse' },
+          { label: 'Vandspil og fontæner', href: '/shop/hus-og-have/vandspil-og-fontaener' },
+        ],
+      },
+    ],
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Mobile Navigation (accordion-style)                                */
+/* ------------------------------------------------------------------ */
+
+function MobileNav({
+  location,
+  isActiveRoute,
+  onClose,
+}: {
+  location: string;
+  isActiveRoute: (path: string) => boolean;
+  onClose: () => void;
+}) {
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+
+  return (
+    <div className="flex-1 overflow-y-auto py-2">
+      <div className="px-2">
+        <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          Kategorier
+        </div>
+        <Link
+          href="/shop"
+          onClick={onClose}
+          className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            isActiveRoute('/shop')
+              ? 'text-[var(--grus-green)] bg-green-50'
+              : 'text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          Alle produkter
+        </Link>
+        {MAIN_MENU.map((item) => {
+          const hasColumns = item.columns && item.columns.length > 0;
+          const isExpanded = expandedMenu === item.label;
+          const isActive = location.startsWith(item.href);
+
+          return (
+            <div key={item.label}>
+              <div className="flex items-center">
+                <Link
+                  href={item.href}
+                  onClick={onClose}
+                  className={`flex-1 flex items-center px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    isActive
+                      ? 'text-[var(--grus-green)] bg-green-50 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+                {hasColumns && (
+                  <button
+                    onClick={() => setExpandedMenu(isExpanded ? null : item.label)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-[var(--grus-green)] hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
+              </div>
+              {hasColumns && isExpanded && (
+                <div className="ml-4 border-l-2 border-gray-100 pl-2 mb-1">
+                  {item.columns!.map((col) => (
+                    <div key={col.label}>
+                      <Link
+                        href={col.href}
+                        onClick={onClose}
+                        className="flex items-center px-3 py-2 text-[13px] font-semibold text-gray-700 hover:text-[var(--grus-green)] transition-colors"
+                      >
+                        {col.label}
+                      </Link>
+                      {col.children && col.children.length > 0 && (
+                        <div className="ml-3">
+                          {col.children.map((child) => (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              onClick={onClose}
+                              className="block px-3 py-1.5 text-[12px] text-gray-500 hover:text-[var(--grus-green)] transition-colors"
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="my-2 mx-5 h-px bg-gray-100" />
+
+      <div className="px-2">
+        {[
+          { href: '/volumenberegner', label: 'Mængdeberegner' },
+          { href: '/levering', label: 'Levering' },
+          { href: '/om-os', label: 'Om os' },
+          { href: '/kontakt', label: 'Kontakt' },
+        ].map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onClose}
+            className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isActiveRoute(item.href)
+                ? 'text-[var(--grus-green)] bg-green-50'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function Header() {
@@ -38,34 +349,6 @@ export default function Header() {
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const { totalItems, setIsOpen } = useCart();
   const prevTotalItems = useRef(totalItems);
-
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
-    queryFn: () => fetch('/api/categories').then((r) => r.json()),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const parentCategories = categories.filter((c) => c.parentId === null && c.count > 0);
-
-  // For the header nav: only show main department categories (those with 2+ subcategories)
-  const navCategories = useMemo(() => {
-    return parentCategories.filter((cat) => {
-      const children = categories.filter((c) => c.parentId === cat.id);
-      return children.length >= 2;
-    });
-  }, [parentCategories, categories]);
-
-  // Build children lookup for dropdown menus
-  const childrenByParentId = useMemo(() => {
-    const map: Record<number, Category[]> = {};
-    for (const c of categories) {
-      if (c.parentId !== null) {
-        if (!map[c.parentId]) map[c.parentId] = [];
-        map[c.parentId].push(c);
-      }
-    }
-    return map;
-  }, [categories]);
 
   const updateCSSVar = useCallback(() => {
     const h = wrapperRef.current?.getBoundingClientRect().height || 0;
@@ -123,7 +406,6 @@ export default function Header() {
     }
   };
 
-  const isActiveCategory = (slug: string) => location === `/shop/${slug}` || location.startsWith(`/shop/${slug}/`);
   const isActiveRoute = (path: string) => location === path;
 
   return (
@@ -267,49 +549,75 @@ export default function Header() {
             </div>
           </div>
 
-          {/* ═══ Category navigation row with dropdowns ═══ */}
+          {/* ═══ Category navigation row with dropdowns (matches gruslevering.dk WP menu) ═══ */}
           {!scrolled && (
           <div className="hidden lg:flex items-center justify-center gap-0 pb-2">
-            {navCategories.map((cat) => {
-              const children = childrenByParentId[cat.id] || [];
-              const hasChildren = children.length > 0;
+            {MAIN_MENU.map((item) => {
+              const hasColumns = item.columns && item.columns.length > 0;
+              // Check if any column has children (= multi-column mega menu)
+              const isMegaMenu = item.columns?.some((col) => col.children && col.children.length > 0);
 
               return (
-                <div key={cat.id} className="relative group">
+                <div key={item.label} className="relative group">
                   <Link
-                    href={`/shop/${cat.slug}`}
+                    href={item.href}
                     className={`flex items-center gap-1 px-3 py-1.5 text-[14px] font-medium rounded-md transition-colors ${
-                      isActiveCategory(cat.slug)
+                      location.startsWith(item.href)
                         ? 'text-[var(--grus-green)] bg-green-50'
                         : 'text-gray-700 hover:text-[var(--grus-green)] hover:bg-gray-50'
                     }`}
                   >
-                    {cat.name}
-                    {hasChildren && (
+                    {item.label}
+                    {hasColumns && (
                       <ChevronDown className="w-3.5 h-3.5 text-gray-400 group-hover:text-[var(--grus-green)] transition-transform group-hover:rotate-180" />
                     )}
                   </Link>
+
                   {/* Dropdown */}
-                  {hasChildren && (
+                  {hasColumns && (
                     <div className="absolute top-full left-0 pt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-                      <div className="bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 min-w-[200px]">
-                        <Link
-                          href={`/shop/${cat.slug}`}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:text-[var(--grus-green)] hover:bg-green-50 transition-colors font-medium"
-                        >
-                          Alle {cat.name.toLowerCase()}
-                        </Link>
-                        <div className="h-px bg-gray-100 mx-3 my-1" />
-                        {children.map((child) => (
-                          <Link
-                            key={child.id}
-                            href={`/shop/${cat.slug}/${child.slug}`}
-                            className="block px-4 py-2 text-sm text-gray-600 hover:text-[var(--grus-green)] hover:bg-green-50 transition-colors"
-                          >
-                            {child.name}
-                          </Link>
-                        ))}
-                      </div>
+                      {isMegaMenu ? (
+                        /* Multi-column mega menu */
+                        <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-5 flex gap-8 min-w-max">
+                          {item.columns!.map((col) => (
+                            <div key={col.label} className="min-w-[180px]">
+                              <Link
+                                href={col.href}
+                                className="block text-[13px] font-bold text-gray-900 hover:text-[var(--grus-green)] transition-colors uppercase tracking-wide mb-2"
+                              >
+                                {col.label}
+                              </Link>
+                              {col.children && (
+                                <ul className="space-y-0.5">
+                                  {col.children.map((child) => (
+                                    <li key={child.href}>
+                                      <Link
+                                        href={child.href}
+                                        className="block py-1 text-sm text-gray-600 hover:text-[var(--grus-green)] transition-colors"
+                                      >
+                                        {child.label}
+                                      </Link>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        /* Simple single-column dropdown */
+                        <div className="bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 min-w-[200px]">
+                          {item.columns!.map((col) => (
+                            <Link
+                              key={col.href}
+                              href={col.href}
+                              className="block px-4 py-2 text-sm text-gray-600 hover:text-[var(--grus-green)] hover:bg-green-50 transition-colors"
+                            >
+                              {col.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -408,63 +716,7 @@ export default function Header() {
         </div>
 
         {/* Navigation links */}
-        <div className="flex-1 overflow-y-auto py-2">
-          <div className="px-2">
-            <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              Kategorier
-            </div>
-            <Link
-              href="/shop"
-              onClick={() => setMobileOpen(false)}
-              className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActiveRoute('/shop')
-                  ? 'text-[var(--grus-green)] bg-green-50'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Alle produkter
-            </Link>
-            {navCategories.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/shop/${cat.slug}`}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActiveCategory(cat.slug)
-                    ? 'text-[var(--grus-green)] bg-green-50 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <span>{cat.name}</span>
-                <span className="text-xs text-gray-400">{cat.count}</span>
-              </Link>
-            ))}
-          </div>
-
-          <div className="my-2 mx-5 h-px bg-gray-100" />
-
-          <div className="px-2">
-            {[
-              { href: '/volumenberegner', label: 'Volumenberegner' },
-              { href: '/levering', label: 'Levering' },
-              { href: '/om-os', label: 'Om os' },
-              { href: '/kontakt', label: 'Kontakt' },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActiveRoute(item.href)
-                    ? 'text-[var(--grus-green)] bg-green-50'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </div>
+        <MobileNav location={location} isActiveRoute={isActiveRoute} onClose={() => setMobileOpen(false)} />
 
         {/* Contact info at bottom */}
         <div className="border-t border-gray-100 px-5 py-4 bg-gray-50">

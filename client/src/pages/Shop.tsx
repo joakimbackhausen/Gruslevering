@@ -10,20 +10,12 @@ import {
 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import SmartImage from '@/components/SmartImage';
-import { useCart } from '@/contexts/CartContext';
+import ProductCard from '@/components/ProductCard';
 import type { Product, Category } from '@/types/product';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
-
-const formatPrice = (price: number) =>
-  new Intl.NumberFormat('da-DK', {
-    style: 'currency',
-    currency: 'DKK',
-    minimumFractionDigits: 0,
-  }).format(price);
 
 type SortOption = 'popular' | 'price-asc' | 'price-desc' | 'name';
 
@@ -65,129 +57,16 @@ function matchesPriceRange(price: number, range: PriceRange): boolean {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden">
-      <div className="aspect-square bg-[var(--grus-sand)] animate-pulse" />
-      <div className="p-4 space-y-2">
-        <div className="h-3 w-16 rounded bg-gray-100 animate-pulse" />
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="aspect-square bg-gray-50 animate-pulse" />
+      <div className="p-3 space-y-2">
         <div className="h-4 w-3/4 rounded bg-gray-100 animate-pulse" />
         <div className="h-4 w-1/3 rounded bg-gray-100 animate-pulse" />
       </div>
-      <div className="px-4 pb-4">
+      <div className="px-3 pb-3">
         <div className="h-10 rounded-lg bg-gray-100 animate-pulse" />
       </div>
     </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Product Card (consistent with Home)                               */
-/* ------------------------------------------------------------------ */
-
-function ProductCard({ product }: { product: Product }) {
-  const productUrl = `/produkt/${product.slug || product.id}`;
-  const hasVariants = product.variants && product.variants.length > 0;
-  const effectivePrice = product.salePrice ?? product.basePrice;
-  const isOnSale =
-    product.salePrice !== null && product.salePrice < product.basePrice;
-
-  const { addItem, setIsOpen } = useCart();
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (hasVariants) return;
-    addItem({
-      id: product.id,
-      wcProductId: product.wcId ?? undefined,
-      title: product.title,
-      price: effectivePrice,
-      image: product.image,
-      sku: product.sku,
-      unit: product.unit,
-      tieredPricing: product.tieredPricing,
-    });
-    setIsOpen(true);
-  };
-
-  return (
-    <Link
-      href={productUrl}
-      className="group block bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden transition-all duration-200 hover:shadow-md"
-    >
-      {/* Image */}
-      <div className="relative aspect-square overflow-hidden">
-        {product.image ? (
-          <SmartImage
-            src={product.image}
-            alt={product.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            width={400}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300 text-sm">
-            Ingen billede
-          </div>
-        )}
-        {isOnSale && (
-          <span className="absolute top-2 right-2 bg-[var(--grus-accent)] text-white text-xs font-bold rounded-lg px-2 py-1">
-            Tilbud
-          </span>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="p-4">
-        <span className="text-xs font-semibold uppercase tracking-wide text-[var(--grus-green)]">
-          {product.category}
-        </span>
-        <h3 className="text-sm font-medium text-[var(--grus-dark)] mt-1 line-clamp-2 leading-snug min-h-[2.5rem]">
-          {product.title}
-        </h3>
-        <div className="mt-2 flex items-baseline gap-2">
-          {isOnSale ? (
-            <>
-              <span className="text-base font-bold text-[var(--grus-accent)]">
-                {hasVariants ? 'Fra ' : ''}
-                {formatPrice(product.salePrice!)}
-              </span>
-              <span className="text-sm text-gray-400 line-through">
-                {formatPrice(product.basePrice)}
-              </span>
-            </>
-          ) : (
-            <span className="text-base font-bold text-[var(--grus-dark)]">
-              {hasVariants && (
-                <span className="text-sm font-normal text-gray-500">
-                  Fra{' '}
-                </span>
-              )}
-              {formatPrice(effectivePrice)}
-            </span>
-          )}
-        </div>
-        {product.deliveryIncluded && (
-          <p className="text-xs text-gray-400 mt-0.5">
-            inkl. levering
-          </p>
-        )}
-      </div>
-
-      {/* Button */}
-      <div className="px-4 pb-4">
-        {hasVariants ? (
-          <span className="block w-full text-center border border-[var(--grus-green)] text-[var(--grus-green)] py-2.5 rounded-lg text-sm font-semibold group-hover:bg-[var(--grus-green-light)] transition-colors">
-            Se produkt &rarr;
-          </span>
-        ) : (
-          <button
-            onClick={handleAddToCart}
-            className="w-full bg-[var(--grus-green)] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[var(--grus-green-hover)] transition-colors cursor-pointer"
-          >
-            Læg i kurv
-          </button>
-        )}
-      </div>
-    </Link>
   );
 }
 

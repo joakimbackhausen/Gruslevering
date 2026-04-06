@@ -20,6 +20,7 @@ import {
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SmartImage from '@/components/SmartImage';
+import ProductCard from '@/components/ProductCard';
 import { useCart } from '@/contexts/CartContext';
 import type { Product, TieredPrice } from '@/types/product';
 
@@ -100,68 +101,6 @@ function AccordionTab({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Related Product Card                                              */
-/* ------------------------------------------------------------------ */
-
-function ProductCard({ product }: { product: Product }) {
-  const productUrl = `/produkt/${product.slug || product.id}`;
-  const hasVariants = product.variants && product.variants.length > 0;
-  const effectivePrice = product.salePrice ?? product.basePrice;
-  const isOnSale =
-    product.salePrice !== null && product.salePrice < product.basePrice;
-
-  return (
-    <Link
-      href={productUrl}
-      className="group flex-shrink-0 w-[220px] sm:w-[240px] snap-start block"
-    >
-      <div className="relative aspect-square bg-white rounded-2xl overflow-hidden mb-3 border border-gray-200">
-        {product.image ? (
-          <SmartImage
-            src={product.image}
-            alt={product.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            width={250}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
-            Ingen billede
-          </div>
-        )}
-        {isOnSale && (
-          <span className="absolute top-3 left-3 bg-red-500 text-white text-[11px] font-bold rounded-full px-2.5 py-0.5">
-            TILBUD
-          </span>
-        )}
-      </div>
-      <h3 className="text-sm font-medium text-[var(--grus-dark)] line-clamp-2 leading-snug min-h-[2.5rem]">
-        {product.title}
-      </h3>
-      <div className="mt-1.5">
-        {isOnSale ? (
-          <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold text-red-600">
-              {formatPriceKr(product.salePrice!)}
-            </span>
-            <span className="text-xs text-gray-400 line-through">
-              {formatPriceKr(product.basePrice)}
-            </span>
-          </div>
-        ) : (
-          <span className="text-base font-bold text-[var(--grus-dark)]">
-            {hasVariants ? 'Fra ' : ''}
-            {formatPriceKr(effectivePrice)}
-          </span>
-        )}
-      </div>
-      {product.deliveryIncluded && (
-        <p className="text-xs text-gray-400 mt-0.5">Fri levering</p>
-      )}
-    </Link>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /*  Related Products Carousel                                         */
 /* ------------------------------------------------------------------ */
 
@@ -206,7 +145,9 @@ function RelatedCarousel({ products }: { products: Product[] }) {
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {products.map((p) => (
-          <ProductCard key={p.id} product={p} />
+          <div key={p.id} className="shrink-0 w-[220px] sm:w-[240px] snap-start">
+            <ProductCard product={p} />
+          </div>
         ))}
       </div>
       {canScrollRight && (
