@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Link, useParams, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Search,
   X,
   ChevronRight,
   ChevronDown,
@@ -249,6 +248,7 @@ function SidebarFilters({
   onReset: () => void;
 }) {
   const parentCategories = categories.filter((c) => c.parentId === null);
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
 
   // Build children lookup: parentId -> child categories
   const childrenByParentId = useMemo(() => {
@@ -281,8 +281,22 @@ function SidebarFilters({
     return count;
   }
 
-  // Check if a category or any of its children is selected
-  function isParentOrChildSelected(parent: Category): boolean {
+  // Toggle expand/collapse for parent categories
+  function toggleParent(slug: string) {
+    setExpandedParents((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) {
+        next.delete(slug);
+      } else {
+        next.add(slug);
+      }
+      return next;
+    });
+  }
+
+  // A parent is expanded if manually toggled OR if it or a child is selected
+  function isExpanded(parent: Category): boolean {
+    if (expandedParents.has(parent.slug)) return true;
     if (selectedCategory === parent.slug) return true;
     const children = childrenByParentId[parent.id] || [];
     return children.some((c) => c.slug === selectedCategory);
@@ -318,30 +332,41 @@ function SidebarFilters({
           {parentCategories.map((parent) => {
             const children = childrenByParentId[parent.id] || [];
             const parentCount = getParentCount(parent);
-            const isExpanded = isParentOrChildSelected(parent);
+            const expanded = isExpanded(parent);
 
             return (
               <li key={parent.slug}>
-                <button
-                  onClick={() => onCategoryChange(parent.slug)}
-                  className={`flex items-center gap-2 w-full text-left text-sm py-1.5 px-2 rounded-lg transition-colors ${
-                    selectedCategory === parent.slug
-                      ? 'font-semibold text-[var(--grus-green)] bg-[var(--grus-green-light)]'
-                      : 'text-[var(--grus-dark)] hover:text-[var(--grus-green)] hover:bg-[var(--grus-green-light)]/50'
-                  }`}
-                >
-                  {selectedCategory === parent.slug && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--grus-green)] flex-shrink-0" />
+                <div className="flex items-center gap-0">
+                  <button
+                    onClick={() => onCategoryChange(parent.slug)}
+                    className={`flex items-center gap-2 flex-1 text-left text-sm py-1.5 px-2 rounded-lg transition-colors ${
+                      selectedCategory === parent.slug
+                        ? 'font-semibold text-[var(--grus-green)] bg-[var(--grus-green-light)]'
+                        : 'text-[var(--grus-dark)] hover:text-[var(--grus-green)] hover:bg-[var(--grus-green-light)]/50'
+                    }`}
+                  >
+                    {selectedCategory === parent.slug && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--grus-green)] flex-shrink-0" />
+                    )}
+                    <span className={selectedCategory !== parent.slug ? 'ml-3.5' : ''}>
+                      {parent.name}
+                    </span>
+                    <span className="ml-auto text-xs text-gray-400">
+                      ({parentCount})
+                    </span>
+                  </button>
+                  {children.length > 0 && (
+                    <button
+                      onClick={() => toggleParent(parent.slug)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--grus-green)] hover:bg-gray-100 transition-colors flex-shrink-0"
+                      aria-label={expanded ? 'Fold sammen' : 'Udvid'}
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+                    </button>
                   )}
-                  <span className={selectedCategory !== parent.slug ? 'ml-3.5' : ''}>
-                    {parent.name}
-                  </span>
-                  <span className="ml-auto text-xs text-gray-400">
-                    ({parentCount})
-                  </span>
-                </button>
-                {/* Child categories — show when parent or a child is selected */}
-                {children.length > 0 && isExpanded && (
+                </div>
+                {/* Child categories — toggle expandable */}
+                {children.length > 0 && expanded && (
                   <ul className="ml-5 mt-1 space-y-0.5 border-l-2 border-[var(--grus-border)] pl-2">
                     {children.map((child) => (
                       <li key={child.slug}>
@@ -472,8 +497,6 @@ function MobileFilterDrawer({
 export default function Shop() {
   const params = useParams<{ kategori?: string; underkategori?: string }>();
   const [, navigate] = useLocation();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [showSortDrop, setShowSortDrop] = useState(false);
   const [priceRange, setPriceRange] = useState<PriceRange>('all');
@@ -482,12 +505,6 @@ export default function Shop() {
 
   // If URL is /shop/parent/child, use child slug; otherwise use parent slug
   const selectedCategory = params.underkategori || params.kategori || null;
-
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   // Close sort dropdown on outside click
   useEffect(() => {
@@ -556,16 +573,6 @@ export default function Shop() {
       );
     }
 
-    if (debouncedSearch) {
-      const q = debouncedSearch.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.sku.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q),
-      );
-    }
-
     switch (sortBy) {
       case 'price-asc':
         result = [...result].sort(
@@ -589,7 +596,7 @@ export default function Shop() {
     }
 
     return result;
-  }, [products, selectedCategory, debouncedSearch, sortBy, priceRange, childSlugsByParent]);
+  }, [products, selectedCategory, sortBy, priceRange, childSlugsByParent]);
 
   const selectedCatObj = categories.find((c) => c.slug === selectedCategory);
   // Resolve parent category for breadcrumb when a child category is selected
@@ -602,8 +609,6 @@ export default function Shop() {
 
   const clearFilters = useCallback(() => {
     navigate('/shop');
-    setSearchQuery('');
-    setDebouncedSearch('');
     setPriceRange('all');
   }, [navigate]);
 
@@ -708,26 +713,6 @@ export default function Shop() {
             <div className="flex-1 min-w-0">
               {/* Top bar */}
               <div className="space-y-3 mb-6">
-                {/* Search input */}
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Søg produkter..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full text-sm border border-[var(--grus-border)] rounded-lg pl-10 pr-9 py-2.5 bg-white focus:border-[var(--grus-green)] focus:ring-1 focus:ring-[var(--grus-green)] focus:outline-none transition-colors font-sans"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[var(--grus-dark)]"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
                 {/* Controls row */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -832,6 +817,31 @@ export default function Shop() {
           </div>
         </div>
       </main>
+
+      {/* SEO category descriptions */}
+      {categories.length > 0 && (
+        <section className="bg-[var(--grus-sand)] border-t border-[var(--grus-border)]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {categories
+                .filter((c) => c.description && c.description.trim().length > 0)
+                .map((cat) => (
+                  <div key={cat.slug}>
+                    <Link
+                      href={cat.url || `/shop/${cat.slug}`}
+                      className="text-base font-semibold text-[var(--grus-dark)] hover:text-[var(--grus-green)] transition-colors"
+                    >
+                      {cat.name}
+                    </Link>
+                    <p className="mt-2 text-sm text-gray-600 leading-relaxed line-clamp-4">
+                      {cat.description}
+                    </p>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Mobile filter drawer */}
       <MobileFilterDrawer

@@ -143,7 +143,7 @@ export default function Header() {
       <header
         className={`transition-all duration-300 bg-white ${
           scrolled ? 'shadow-md' : ''
-        }`}
+        } ${location.startsWith('/shop') || location.startsWith('/produkt') ? 'border-b border-gray-200' : ''}`}
       >
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-[56px] lg:h-[90px] gap-4 lg:gap-6">
