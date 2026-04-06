@@ -47,11 +47,11 @@ export default function Header() {
 
   const parentCategories = categories.filter((c) => c.parentId === null && c.count > 0);
 
-  // For the header nav: only show main categories (with children or 3+ products)
+  // For the header nav: only show main department categories (those with 2+ subcategories)
   const navCategories = useMemo(() => {
     return parentCategories.filter((cat) => {
       const children = categories.filter((c) => c.parentId === cat.id);
-      return children.length > 0 || cat.count >= 3;
+      return children.length >= 2;
     });
   }, [parentCategories, categories]);
 
