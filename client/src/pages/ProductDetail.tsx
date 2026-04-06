@@ -326,7 +326,7 @@ export default function ProductDetail() {
     addItem({
       id: product.id,
       title: product.title,
-      price: effectivePrice,
+      price: currentPrice,
       image: product.image,
       sku: product.sku,
       variant: variantString || undefined,
@@ -334,6 +334,7 @@ export default function ProductDetail() {
         Object.keys(selectedVariants).length > 0 ? selectedVariants : undefined,
       unit: product.unit,
       tieredPricing: product.tieredPricing,
+      quantity,
     });
 
     setAddedToCart(true);

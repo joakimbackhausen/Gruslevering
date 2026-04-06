@@ -249,7 +249,19 @@ function SidebarFilters({
 }) {
   const parentCategories = categories.filter((c) => c.parentId === null);
 
-  // Count products per category
+  // Build children lookup: parentId -> child categories
+  const childrenByParentId = useMemo(() => {
+    const map: Record<number, Category[]> = {};
+    for (const c of categories) {
+      if (c.parentId !== null) {
+        if (!map[c.parentId]) map[c.parentId] = [];
+        map[c.parentId].push(c);
+      }
+    }
+    return map;
+  }, [categories]);
+
+  // Count products per category (direct slug match)
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const p of products) {
@@ -257,6 +269,23 @@ function SidebarFilters({
     }
     return counts;
   }, [products]);
+
+  // Count products for a parent = sum of direct + all children
+  function getParentCount(parent: Category): number {
+    let count = categoryCounts[parent.slug] || 0;
+    const children = childrenByParentId[parent.id] || [];
+    for (const child of children) {
+      count += categoryCounts[child.slug] || 0;
+    }
+    return count;
+  }
+
+  // Check if a category or any of its children is selected
+  function isParentOrChildSelected(parent: Category): boolean {
+    if (selectedCategory === parent.slug) return true;
+    const children = childrenByParentId[parent.id] || [];
+    return children.some((c) => c.slug === selectedCategory);
+  }
 
   const hasActiveFilters = selectedCategory !== null || priceRange !== 'all';
 
@@ -285,28 +314,61 @@ function SidebarFilters({
               </span>
             </button>
           </li>
-          {parentCategories.map((c) => (
-            <li key={c.slug}>
-              <button
-                onClick={() => onCategoryChange(c.slug)}
-                className={`flex items-center gap-2 w-full text-left text-sm py-1.5 px-2 rounded-lg transition-colors ${
-                  selectedCategory === c.slug
-                    ? 'font-semibold text-[var(--grus-green)] bg-[var(--grus-green-light)]'
-                    : 'text-[var(--grus-dark)] hover:text-[var(--grus-green)] hover:bg-[var(--grus-green-light)]/50'
-                }`}
-              >
-                {selectedCategory === c.slug && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--grus-green)] flex-shrink-0" />
+          {parentCategories.map((parent) => {
+            const children = childrenByParentId[parent.id] || [];
+            const parentCount = getParentCount(parent);
+            const isExpanded = isParentOrChildSelected(parent);
+
+            return (
+              <li key={parent.slug}>
+                <button
+                  onClick={() => onCategoryChange(parent.slug)}
+                  className={`flex items-center gap-2 w-full text-left text-sm py-1.5 px-2 rounded-lg transition-colors ${
+                    selectedCategory === parent.slug
+                      ? 'font-semibold text-[var(--grus-green)] bg-[var(--grus-green-light)]'
+                      : 'text-[var(--grus-dark)] hover:text-[var(--grus-green)] hover:bg-[var(--grus-green-light)]/50'
+                  }`}
+                >
+                  {selectedCategory === parent.slug && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--grus-green)] flex-shrink-0" />
+                  )}
+                  <span className={selectedCategory !== parent.slug ? 'ml-3.5' : ''}>
+                    {parent.name}
+                  </span>
+                  <span className="ml-auto text-xs text-gray-400">
+                    ({parentCount})
+                  </span>
+                </button>
+                {/* Child categories — show when parent or a child is selected */}
+                {children.length > 0 && isExpanded && (
+                  <ul className="ml-5 mt-1 space-y-0.5 border-l-2 border-[var(--grus-border)] pl-2">
+                    {children.map((child) => (
+                      <li key={child.slug}>
+                        <button
+                          onClick={() => onCategoryChange(child.slug)}
+                          className={`flex items-center gap-2 w-full text-left text-[13px] py-1 px-2 rounded-lg transition-colors ${
+                            selectedCategory === child.slug
+                              ? 'font-semibold text-[var(--grus-green)] bg-[var(--grus-green-light)]'
+                              : 'text-gray-600 hover:text-[var(--grus-green)] hover:bg-[var(--grus-green-light)]/50'
+                          }`}
+                        >
+                          {selectedCategory === child.slug && (
+                            <span className="w-1 h-1 rounded-full bg-[var(--grus-green)] flex-shrink-0" />
+                          )}
+                          <span className={selectedCategory !== child.slug ? 'ml-2' : ''}>
+                            {child.name}
+                          </span>
+                          <span className="ml-auto text-xs text-gray-400">
+                            ({categoryCounts[child.slug] || 0})
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-                <span className={selectedCategory !== c.slug ? 'ml-3.5' : ''}>
-                  {c.name}
-                </span>
-                <span className="ml-auto text-xs text-gray-400">
-                  ({categoryCounts[c.slug] || 0})
-                </span>
-              </button>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </FilterSection>
 
@@ -456,11 +518,34 @@ export default function Shop() {
     },
   });
 
+  // Build a set of child slugs for each parent category slug
+  const childSlugsByParent = useMemo(() => {
+    const map: Record<string, Set<string>> = {};
+    const parentCats = categories.filter((c) => c.parentId === null);
+    for (const parent of parentCats) {
+      const childSlugs = categories
+        .filter((c) => c.parentId === parent.id)
+        .map((c) => c.slug);
+      map[parent.slug] = new Set([parent.slug, ...childSlugs]);
+    }
+    return map;
+  }, [categories]);
+
   const filtered = useMemo(() => {
     let result = products;
 
     if (selectedCategory) {
-      result = result.filter((p) => p.categorySlug === selectedCategory);
+      // If selected category is a parent, also include all child category products
+      const matchingSlugs = childSlugsByParent[selectedCategory];
+      if (matchingSlugs) {
+        // Parent category selected — show products from parent + all children
+        result = result.filter(
+          (p) => matchingSlugs.has(p.categorySlug) || p.parentCategorySlug === selectedCategory,
+        );
+      } else {
+        // Child category selected — exact match only
+        result = result.filter((p) => p.categorySlug === selectedCategory);
+      }
     }
 
     if (priceRange !== 'all') {
@@ -502,9 +587,13 @@ export default function Shop() {
     }
 
     return result;
-  }, [products, selectedCategory, debouncedSearch, sortBy, priceRange]);
+  }, [products, selectedCategory, debouncedSearch, sortBy, priceRange, childSlugsByParent]);
 
   const selectedCatObj = categories.find((c) => c.slug === selectedCategory);
+  // Resolve parent category for breadcrumb when a child category is selected
+  const parentCatObj = selectedCatObj?.parentId
+    ? categories.find((c) => c.id === selectedCatObj.parentId)
+    : null;
 
   const activeFilterCount =
     (selectedCategory ? 1 : 0) + (priceRange !== 'all' ? 1 : 0);
@@ -553,6 +642,17 @@ export default function Shop() {
             >
               Shop
             </Link>
+            {parentCatObj && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <Link
+                  href={`/shop/${parentCatObj.slug}`}
+                  className="hover:text-[var(--grus-dark)] transition-colors"
+                >
+                  {parentCatObj.name}
+                </Link>
+              </>
+            )}
             {selectedCatObj && (
               <>
                 <ChevronRight className="w-3.5 h-3.5" />

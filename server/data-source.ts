@@ -47,6 +47,7 @@ export interface Product {
   images: string[];
   category: string;
   categorySlug: string;
+  parentCategorySlug: string | null;
   description: string;
   weight: string;
   volume: string;
@@ -198,28 +199,46 @@ async function refreshCache(): Promise<void> {
       .leftJoin(categoriesTable, eq(productsTable.categoryId, categoriesTable.id))
       .orderBy(asc(productsTable.title));
 
-    cachedProducts = dbProducts.map(({ p, catName, catSlug }) => ({
-      id: String(p.id),
-      title: decodeEntities(p.title),
-      slug: p.slug || "",
-      sku: p.sku || "",
-      basePrice: Number(p.basePrice),
-      salePrice: p.salePrice != null ? Number(p.salePrice) : null,
-      currency: p.currency || "DKK",
-      image: p.image || "",
-      images: (p.images as string[]) || [],
-      category: decodeEntities(catName || ""),
-      categorySlug: catSlug || "",
-      description: decodeEntities(p.description || ""),
-      weight: p.weight || "",
-      volume: p.volume || "",
-      unit: (p.unit as Product["unit"]) || "stk",
-      deliveryIncluded: p.deliveryIncluded ?? false,
-      variants: decodeVariants(p.variants as VariantGroup[] | null),
-      tieredPricing: (p.tieredPricing as TieredPrice[] | null) || null,
-      featured: p.featured ?? false,
-      url: `/produkt/${p.slug}`,
-    }));
+    // Build a lookup from category id -> parent slug for resolving parent category slugs
+    const catByIdMap = new Map(dbCategories.map((c) => [c.id, c]));
+
+    cachedProducts = dbProducts.map(({ p, catName, catSlug }) => {
+      // Resolve parent category slug: if product's category has a parent, find the parent's slug
+      let parentCategorySlug: string | null = null;
+      if (p.categoryId != null) {
+        const cat = catByIdMap.get(p.categoryId);
+        if (cat && cat.parentId != null) {
+          const parentCat = catByIdMap.get(cat.parentId);
+          if (parentCat) {
+            parentCategorySlug = parentCat.slug;
+          }
+        }
+      }
+
+      return {
+        id: String(p.id),
+        title: decodeEntities(p.title),
+        slug: p.slug || "",
+        sku: p.sku || "",
+        basePrice: Number(p.basePrice),
+        salePrice: p.salePrice != null ? Number(p.salePrice) : null,
+        currency: p.currency || "DKK",
+        image: p.image || "",
+        images: (p.images as string[]) || [],
+        category: decodeEntities(catName || ""),
+        categorySlug: catSlug || "",
+        parentCategorySlug,
+        description: decodeEntities(p.description || ""),
+        weight: p.weight || "",
+        volume: p.volume || "",
+        unit: (p.unit as Product["unit"]) || "stk",
+        deliveryIncluded: p.deliveryIncluded ?? false,
+        variants: decodeVariants(p.variants as VariantGroup[] | null),
+        tieredPricing: (p.tieredPricing as TieredPrice[] | null) || null,
+        featured: p.featured ?? false,
+        url: `/produkt/${p.slug}`,
+      };
+    });
 
     cacheTimestamp = Date.now();
     console.log(
@@ -411,7 +430,8 @@ export async function createOrder(
 function mapDbProduct(
   p: typeof productsTable.$inferSelect,
   catName: string | null,
-  catSlug: string | null
+  catSlug: string | null,
+  parentCategorySlug?: string | null
 ): Product {
   return {
     id: String(p.id),
@@ -425,6 +445,7 @@ function mapDbProduct(
     images: (p.images as string[]) || [],
     category: decodeEntities(catName || ""),
     categorySlug: catSlug || "",
+    parentCategorySlug: parentCategorySlug ?? null,
     description: decodeEntities(p.description || ""),
     weight: p.weight || "",
     volume: p.volume || "",

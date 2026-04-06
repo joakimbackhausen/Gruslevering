@@ -29,6 +29,7 @@ export interface Product {
   images: string[];
   category: string;
   categorySlug: string;
+  parentCategorySlug: string | null;
   description: string;
   weight: string;
   volume: string;

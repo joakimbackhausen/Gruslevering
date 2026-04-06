@@ -15,7 +15,7 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "quantity">) => void;
+  addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -57,18 +57,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
-  const addItem = (newItem: Omit<CartItem, "quantity">) => {
+  const addItem = (newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
+    const qty = newItem.quantity ?? 1;
     setItems((prev) => {
       const key = newItem.variant ? `${newItem.id}-${newItem.variant}` : newItem.id;
       const existing = prev.find((i) => (i.variant ? `${i.id}-${i.variant}` : i.id) === key);
       if (existing) {
         return prev.map((i) =>
           (i.variant ? `${i.id}-${i.variant}` : i.id) === key
-            ? { ...i, quantity: i.quantity + 1 }
+            ? { ...i, quantity: i.quantity + qty }
             : i
         );
       }
-      return [...prev, { ...newItem, quantity: 1 }];
+      return [...prev, { ...newItem, quantity: qty }];
     });
     setIsOpen(true);
   };
