@@ -47,6 +47,14 @@ export default function Header() {
 
   const parentCategories = categories.filter((c) => c.parentId === null && c.count > 0);
 
+  // For the header nav: only show main categories (with children or 3+ products)
+  const navCategories = useMemo(() => {
+    return parentCategories.filter((cat) => {
+      const children = categories.filter((c) => c.parentId === cat.id);
+      return children.length > 0 || cat.count >= 3;
+    });
+  }, [parentCategories, categories]);
+
   // Build children lookup for dropdown menus
   const childrenByParentId = useMemo(() => {
     const map: Record<number, Category[]> = {};
@@ -259,25 +267,10 @@ export default function Header() {
             </div>
           </div>
 
-          {/* ═══ Category navigation row with dropdowns (matches gruslevering.dk menu) ═══ */}
+          {/* ═══ Category navigation row with dropdowns ═══ */}
           {!scrolled && (
           <div className="hidden lg:flex items-center justify-center gap-0 pb-2">
-            {(() => {
-              // Only show the main menu categories from gruslevering.dk, in exact order
-              const menuSlugs = [
-                'granitskaerver-sten-pyntesten',
-                'sand-grus',
-                'stobematerialer',
-                'muldjord',
-                'traeflis',
-                'stroelse',
-                'braendsel',
-                'hus-og-have',
-              ];
-              return menuSlugs
-                .map(slug => parentCategories.find(c => c.slug === slug))
-                .filter((c): c is Category => c !== undefined);
-            })().map((cat) => {
+            {navCategories.map((cat) => {
               const children = childrenByParentId[cat.id] || [];
               const hasChildren = children.length > 0;
 
@@ -431,7 +424,7 @@ export default function Header() {
             >
               Alle produkter
             </Link>
-            {parentCategories.map((cat) => (
+            {navCategories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/shop/${cat.slug}`}
