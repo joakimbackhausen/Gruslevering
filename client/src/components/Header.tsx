@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
-import CartDrawer from './CartDrawer';
+
+const CartDrawer = lazy(() => import('./CartDrawer'));
 import {
   Search,
   Menu,
@@ -482,7 +483,9 @@ export default function Header() {
         </div>
       </div>
 
-      <CartDrawer />
+      <Suspense fallback={null}>
+        <CartDrawer />
+      </Suspense>
     </div>
   );
 }

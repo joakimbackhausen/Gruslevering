@@ -25,11 +25,21 @@
 
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
+
+    <!-- Preconnect to external origins -->
     <link rel="preconnect" href="https://gruslevering.dk" crossorigin>
     <link rel="dns-prefetch" href="https://gruslevering.dk">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Non-render-blocking font loading -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet"></noscript>
+
+    <!-- Preload hero image for faster LCP -->
+    <link rel="preload" as="image" href="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=800" media="(max-width: 768px)">
+    <link rel="preload" as="image" href="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400" media="(min-width: 769px)">
   </head>
   <body>
     <div id="root"></div>

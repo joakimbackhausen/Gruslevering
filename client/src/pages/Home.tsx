@@ -274,11 +274,15 @@ export default function Home() {
             {/* Background image */}
             {/* Hero image - delivery truck from gruslevering.dk */}
             <img
-              src="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400"
+              src="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=800"
+              srcSet="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600 600w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=800 800w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400 1400w"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1400px"
               alt="Grus, sten og jord leveret til døren"
               className="absolute inset-0 w-full h-full object-cover"
               fetchPriority="high"
               decoding="sync"
+              width={1400}
+              height={500}
             />
             {/* Dark overlay for readability */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
@@ -455,30 +459,6 @@ export default function Home() {
               ))}
             </div>
           )}
-        </div>
-      </section>
-
-      {/* ═══ VALUE PROPOSITIONS (like gruslevering nytestforside) ═══ */}
-      <section className="py-10 lg:py-12 bg-white">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 lg:gap-4">
-            {[
-              { emoji: '🚚', title: 'Gratis levering', desc: 'På alle bigbag produkter' },
-              { emoji: '✅', title: 'Kun kvalitet', desc: 'Håndplukkede materialer' },
-              { emoji: '📦', title: 'Hurtig levering', desc: '3-5 hverdages levering' },
-              { emoji: '🏠', title: 'Til din adresse', desc: 'Levering i hele Danmark' },
-              { emoji: '💰', title: 'Ingen gebyrer', desc: 'Pris inkl. levering' },
-              { emoji: '📞', title: 'Kundeservice', desc: 'Ring 72 49 44 44' },
-            ].map((item) => (
-              <div key={item.title} className="flex flex-col items-center text-center gap-2">
-                <span className="text-2xl lg:text-3xl">{item.emoji}</span>
-                <div>
-                  <p className="text-sm font-bold text-gray-900">{item.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 

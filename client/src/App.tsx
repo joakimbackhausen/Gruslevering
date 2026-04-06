@@ -5,20 +5,22 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/contexts/CartContext";
 import { lazy, Suspense } from "react";
-import Home from "@/pages/Home";
-import Shop from "@/pages/Shop";
-import ProductDetail from "@/pages/ProductDetail";
-import About from "@/pages/About";
-import Contact from "@/pages/Contact";
-import Checkout from "@/pages/Checkout";
-import OrderConfirmation from "@/pages/OrderConfirmation";
 
+// Only Home is eagerly loaded (landing page), everything else is lazy
+import Home from "@/pages/Home";
+
+const Shop = lazy(() => import("@/pages/Shop"));
+const ProductDetail = lazy(() => import("@/pages/ProductDetail"));
+const About = lazy(() => import("@/pages/About"));
+const Contact = lazy(() => import("@/pages/Contact"));
+const Checkout = lazy(() => import("@/pages/Checkout"));
+const OrderConfirmation = lazy(() => import("@/pages/OrderConfirmation"));
 const VolumeCalculator = lazy(() => import("@/pages/VolumeCalculator"));
 const Delivery = lazy(() => import("@/pages/Delivery"));
 
 function Router() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Indlæser...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-3 border-[var(--grus-green)] border-t-transparent rounded-full animate-spin" /></div>}>
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/shop" component={Shop} />

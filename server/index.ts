@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { syncFromWooCommerce } from "./data-source";
@@ -6,6 +7,9 @@ import { createServer } from "http";
 
 const app = express();
 const httpServer = createServer(app);
+
+// Enable gzip/brotli compression for all responses
+app.use(compression());
 
 declare module "http" {
   interface IncomingMessage {
