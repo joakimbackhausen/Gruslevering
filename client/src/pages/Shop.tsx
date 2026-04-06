@@ -470,7 +470,7 @@ function MobileFilterDrawer({
 /* ------------------------------------------------------------------ */
 
 export default function Shop() {
-  const params = useParams<{ kategori?: string }>();
+  const params = useParams<{ kategori?: string; underkategori?: string }>();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -480,7 +480,8 @@ export default function Shop() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
-  const selectedCategory = params.kategori || null;
+  // If URL is /shop/parent/child, use child slug; otherwise use parent slug
+  const selectedCategory = params.underkategori || params.kategori || null;
 
   // Debounce search
   useEffect(() => {
@@ -608,13 +609,23 @@ export default function Shop() {
 
   const handleCategoryChange = useCallback(
     (slug: string | null) => {
-      if (slug) {
-        navigate(`/shop/${slug}`);
-      } else {
+      if (!slug) {
         navigate('/shop');
+        return;
       }
+      // Check if this is a child category — if so, build /shop/parent/child URL
+      const cat = categories.find((c) => c.slug === slug);
+      if (cat && cat.parentId !== null) {
+        const parent = categories.find((c) => c.id === cat.parentId);
+        if (parent) {
+          navigate(`/shop/${parent.slug}/${slug}`);
+          return;
+        }
+      }
+      // Parent category or unknown — use /shop/slug
+      navigate(`/shop/${slug}`);
     },
-    [navigate],
+    [navigate, categories],
   );
 
   return (

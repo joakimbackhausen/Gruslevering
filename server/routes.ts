@@ -289,7 +289,7 @@ export async function registerRoutes(
       for (const cat of categories) {
         xml += `
   <url>
-    <loc>${baseUrl}/shop/${cat.slug}</loc>
+    <loc>${baseUrl}${cat.url}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>

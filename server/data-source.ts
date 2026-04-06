@@ -171,6 +171,9 @@ async function refreshCache(): Promise<void> {
     }
 
     // Build category list with counts (parents sum children when they have 0 direct products)
+    // Build a map of id -> slug for parent URL resolution
+    const catSlugById = new Map(dbCategories.map((c) => [c.id, c.slug]));
+
     cachedCategories = dbCategories.map((c) => {
       let count = countMap.get(c.id) || 0;
 
@@ -182,6 +185,15 @@ async function refreshCache(): Promise<void> {
         count = childIds.reduce((sum, childId) => sum + (countMap.get(childId) || 0), 0);
       }
 
+      // Build URL: /shop/parent/child for children, /shop/slug for parents
+      let url = `/shop/${c.slug}`;
+      if (c.parentId != null) {
+        const parentSlug = catSlugById.get(c.parentId);
+        if (parentSlug) {
+          url = `/shop/${parentSlug}/${c.slug}`;
+        }
+      }
+
       return {
         id: c.id,
         slug: c.slug,
@@ -189,7 +201,7 @@ async function refreshCache(): Promise<void> {
         description: decodeEntities(c.description || ""),
         image: c.image || "",
         count,
-        url: `/shop/${c.slug}`,
+        url,
         parentId: c.parentId ?? null,
         sortOrder: c.sortOrder ?? 0,
       };
