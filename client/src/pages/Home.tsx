@@ -4,9 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
   Truck,
-  Clock,
-  Star,
-  ShieldCheck,
   Calculator,
   CheckCircle,
   Leaf,

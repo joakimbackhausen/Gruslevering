@@ -13,9 +13,6 @@ import {
   Mail,
   Truck,
   CheckCircle,
-  MapPin,
-  Shield,
-  Clock,
   ChevronDown,
 } from 'lucide-react';
 
@@ -262,10 +259,29 @@ export default function Header() {
             </div>
           </div>
 
-          {/* ═══ Category navigation row with dropdowns ═══ */}
+          {/* ═══ Category navigation row with dropdowns (matches gruslevering.dk menu) ═══ */}
           {!scrolled && (
           <div className="hidden lg:flex items-center justify-center gap-0 pb-2">
-            {parentCategories.map((cat) => {
+            {(() => {
+              // Show categories in the same order as gruslevering.dk main menu
+              const menuOrder = [
+                'granitskærver-sten', 'granitsk%c3%a6rver-sten', 'granitskearver-sten',
+                'sand-grus', 'stoebeprodukter', 'st%c3%b8beprodukter', 'stobeprodukter', 'stoebematerialer',
+                'muld', 'bunddaekke', 'bundd%c3%a6kke', 'bunddække',
+                'stroelse', 'str%c3%b8else', 'strøelse',
+                'braendsel', 'br%c3%a6ndsel', 'brændsel',
+                'hus-og-have',
+              ];
+              // Sort parent categories by their position in menuOrder, unmatched go to end
+              const sortedCats = [...parentCategories].sort((a, b) => {
+                const aIdx = menuOrder.findIndex(s => a.slug.includes(s) || s.includes(a.slug));
+                const bIdx = menuOrder.findIndex(s => b.slug.includes(s) || s.includes(b.slug));
+                const aPos = aIdx >= 0 ? aIdx : 999;
+                const bPos = bIdx >= 0 ? bIdx : 999;
+                return aPos - bPos;
+              });
+              return sortedCats;
+            })().map((cat) => {
               const children = childrenByParentId[cat.id] || [];
               const hasChildren = children.length > 0;
 
@@ -318,7 +334,7 @@ export default function Header() {
                   : 'text-gray-700 hover:text-[var(--grus-green)] hover:bg-gray-50'
               }`}
             >
-              Beregner
+              Mængdeberegner
             </Link>
           </div>
           )}

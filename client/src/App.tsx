@@ -1,8 +1,6 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/contexts/CartContext";
 import { lazy, Suspense } from "react";
 
@@ -17,6 +15,9 @@ const Checkout = lazy(() => import("@/pages/Checkout"));
 const OrderConfirmation = lazy(() => import("@/pages/OrderConfirmation"));
 const VolumeCalculator = lazy(() => import("@/pages/VolumeCalculator"));
 const Delivery = lazy(() => import("@/pages/Delivery"));
+
+// Lazy-load toast system (rarely needed on first render)
+const Toaster = lazy(() => import("@/components/ui/toaster").then(m => ({ default: m.Toaster })));
 
 function Router() {
   return (
@@ -43,10 +44,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
-        <TooltipProvider>
+        <Router />
+        <Suspense fallback={null}>
           <Toaster />
-          <Router />
-        </TooltipProvider>
+        </Suspense>
       </CartProvider>
     </QueryClientProvider>
   );

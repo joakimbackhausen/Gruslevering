@@ -28,15 +28,35 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks(id) {
           // Core React runtime — cached across all pages
-          'vendor-react': ['react', 'react-dom'],
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'vendor-react';
+          }
+          // Scheduler (React dependency)
+          if (id.includes('node_modules/scheduler')) {
+            return 'vendor-react';
+          }
           // Data fetching layer
-          'vendor-query': ['@tanstack/react-query'],
-          // Animation library — only loaded when needed (cart drawer, about, etc.)
-          'vendor-motion': ['framer-motion'],
+          if (id.includes('node_modules/@tanstack/react-query')) {
+            return 'vendor-query';
+          }
+          // Animation library — only loaded when needed
+          if (id.includes('node_modules/framer-motion')) {
+            return 'vendor-motion';
+          }
           // Router
-          'vendor-router': ['wouter'],
+          if (id.includes('node_modules/wouter')) {
+            return 'vendor-router';
+          }
+          // Radix UI components — separate cacheable chunk
+          if (id.includes('node_modules/@radix-ui')) {
+            return 'vendor-radix';
+          }
+          // Class variance authority (used by shadcn)
+          if (id.includes('node_modules/class-variance-authority') || id.includes('node_modules/clsx') || id.includes('node_modules/tailwind-merge')) {
+            return 'vendor-ui-utils';
+          }
         },
       },
     },
