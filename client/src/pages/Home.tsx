@@ -295,6 +295,28 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ═══ USP BAR ═══ */}
+      <section className="py-6 lg:py-8 border-b border-gray-100">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-y-6 gap-x-4">
+            {[
+              { icon: '🚚', title: 'Gratis levering', desc: 'På alle bigbag produkter' },
+              { icon: '✅', title: 'Kun kvalitet', desc: 'Håndplukkede materialer' },
+              { icon: '📦', title: 'Hurtig levering', desc: '3\u20135 hverdages levering' },
+              { icon: '🏠', title: 'Til din adresse', desc: 'Levering i hele Danmark' },
+              { icon: '💰', title: 'Ingen gebyrer', desc: 'Pris inkl. levering' },
+              { icon: '📞', title: 'Kundeservice', desc: 'Ring 72 49 44 44' },
+            ].map((usp) => (
+              <div key={usp.title} className="flex flex-col items-center text-center">
+                <span className="text-2xl mb-2">{usp.icon}</span>
+                <span className="text-sm font-semibold text-[var(--grus-dark)]">{usp.title}</span>
+                <span className="text-xs text-gray-500 mt-0.5">{usp.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ═══ PRODUCT CAROUSEL SECTION (Plantorama-style with arrows) ═══ */}
       <section className="py-10 lg:py-14">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">

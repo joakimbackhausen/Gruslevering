@@ -117,23 +117,82 @@ interface ShippingAddress {
 }
 
 /**
+ * Collect cookies from a fetch response as a combined string for forwarding.
+ */
+function collectCookies(res: Response, existingCookies: string): string {
+  const setCookies = res.headers.getSetCookie?.() || [];
+  if (setCookies.length === 0) return existingCookies;
+
+  // Parse existing cookies into a map
+  const cookieMap = new Map<string, string>();
+  if (existingCookies) {
+    for (const part of existingCookies.split("; ")) {
+      const [name, ...rest] = part.split("=");
+      if (name) cookieMap.set(name, rest.join("="));
+    }
+  }
+  // Override with new cookies
+  for (const sc of setCookies) {
+    const cookiePart = sc.split(";")[0];
+    const [name, ...rest] = cookiePart.split("=");
+    if (name) cookieMap.set(name.trim(), rest.join("="));
+  }
+
+  return Array.from(cookieMap.entries())
+    .map(([k, v]) => `${k}=${v}`)
+    .join("; ");
+}
+
+/**
+ * Decode HTML entities in shipping rate names (e.g. &#8211; → –)
+ */
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&#8211;/g, "\u2013")
+    .replace(/&#8212;/g, "\u2014")
+    .replace(/&#8217;/g, "\u2019")
+    .replace(/&#8230;/g, "\u2026")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#(\d+);/g, (_m, code) => String.fromCharCode(Number(code)));
+}
+
+/**
  * Calculate available shipping rates by creating a temporary WC Store API cart session.
  * Creates a fresh cart, adds items, sets shipping address, and returns calculated rates.
+ * Uses cookies to maintain the cart session across requests.
  */
 export async function calculateShippingRates(
   items: CartItem[],
   address: ShippingAddress
 ): Promise<StoreApiShippingPackage[]> {
-  // Generate a unique cart token for this calculation session
   const cartToken = crypto.randomUUID();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "Cart-Token": cartToken,
-  };
+  let cookies = "";
 
   console.log(`[store-api] Calculating shipping for ${items.length} items, zip: ${address.postcode}`);
 
-  // 1. Add each item to the cart
+  // 1. Initialize cart session — GET /cart to obtain nonce + session cookies
+  const initRes = await fetch(`${STORE_API_BASE}/cart`, {
+    headers: { "Cart-Token": cartToken },
+  });
+  const nonce = initRes.headers.get("nonce") || "";
+  cookies = collectCookies(initRes, cookies);
+
+  if (!nonce) {
+    throw new Error("Could not obtain Store API nonce");
+  }
+
+  const makeHeaders = (): Record<string, string> => ({
+    "Content-Type": "application/json",
+    "Cart-Token": cartToken,
+    "Nonce": nonce,
+    ...(cookies ? { "Cookie": cookies } : {}),
+  });
+
+  // 2. Add each item to the cart
   for (const item of items) {
     const addBody: Record<string, unknown> = {
       id: item.wcVariationId || item.wcProductId,
@@ -142,21 +201,22 @@ export async function calculateShippingRates(
 
     const addRes = await fetch(`${STORE_API_BASE}/cart/add-item`, {
       method: "POST",
-      headers,
+      headers: makeHeaders(),
       body: JSON.stringify(addBody),
     });
+
+    cookies = collectCookies(addRes, cookies);
 
     if (!addRes.ok) {
       const text = await addRes.text().catch(() => "");
       console.warn(`[store-api] Failed to add item ${item.wcProductId}: ${addRes.status} ${text.slice(0, 200)}`);
-      // Continue with other items — partial cart is better than no cart
     }
   }
 
-  // 2. Update shipping address to trigger rate calculation
+  // 3. Update shipping address to trigger rate calculation
   const updateRes = await fetch(`${STORE_API_BASE}/cart/update-customer`, {
     method: "POST",
-    headers,
+    headers: makeHeaders(),
     body: JSON.stringify({
       shipping_address: {
         country: address.country || "DK",
@@ -167,21 +227,27 @@ export async function calculateShippingRates(
     }),
   });
 
+  cookies = collectCookies(updateRes, cookies);
+
   if (!updateRes.ok) {
     const text = await updateRes.text().catch(() => "");
     throw new Error(`Store API update-customer failed: ${updateRes.status} ${text.slice(0, 200)}`);
   }
 
-  // 3. Get the cart with calculated shipping rates
-  const cartRes = await fetch(`${STORE_API_BASE}/cart`, { headers });
-  if (!cartRes.ok) {
-    const text = await cartRes.text().catch(() => "");
-    throw new Error(`Store API get cart failed: ${cartRes.status} ${text.slice(0, 200)}`);
+  const cart = await updateRes.json() as { shipping_rates: StoreApiShippingPackage[] };
+
+  // Decode HTML entities in rate names
+  if (cart.shipping_rates) {
+    for (const pkg of cart.shipping_rates) {
+      for (const rate of pkg.shipping_rates || []) {
+        rate.name = decodeHtmlEntities(rate.name);
+        rate.description = decodeHtmlEntities(rate.description || "");
+      }
+    }
   }
 
-  const cart = await cartRes.json() as { shipping_rates: StoreApiShippingPackage[] };
-
-  console.log(`[store-api] Got ${cart.shipping_rates?.[0]?.shipping_rates?.length || 0} shipping rates`);
+  const rateCount = cart.shipping_rates?.[0]?.shipping_rates?.length || 0;
+  console.log(`[store-api] Got ${rateCount} shipping rates`);
 
   return cart.shipping_rates || [];
 }
