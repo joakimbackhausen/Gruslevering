@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -209,6 +209,22 @@ export default function Home() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
+  // Fallback images: pick first product image per category for categories without images
+  const categoryFallbackImages = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const cat of parentCategories) {
+      if (!cat.image) {
+        const productInCat = products.find(
+          (p) => p.categorySlug === cat.slug || p.parentCategorySlug === cat.slug,
+        );
+        if (productInCat?.image) {
+          map[cat.slug] = productInCat.image;
+        }
+      }
+    }
+    return map;
+  }, [parentCategories, products]);
+
   const featuredProducts = products.slice(0, 8);
 
   /* Product carousel scroll */
@@ -410,9 +426,9 @@ export default function Home() {
                     href={`/shop/${cat.slug}`}
                     className="group relative aspect-[4/3] rounded-2xl overflow-hidden block shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
                   >
-                    {cat.image ? (
+                    {(cat.image || categoryFallbackImages[cat.slug]) ? (
                       <SmartImage
-                        src={cat.image}
+                        src={cat.image || categoryFallbackImages[cat.slug]}
                         alt={cat.name}
                         className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500"
                         width={350}
