@@ -115,16 +115,16 @@ function ProductCard({ product }: { product: Product }) {
       className="group block bg-white rounded-xl border border-[var(--grus-border)] overflow-hidden transition-all duration-200 hover:shadow-md"
     >
       {/* Image */}
-      <div className="relative aspect-square bg-[var(--grus-sand)] p-4">
+      <div className="relative aspect-square overflow-hidden">
         {product.image ? (
           <SmartImage
             src={product.image}
             alt={product.title}
-            className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
-            width={300}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            width={400}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
+          <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300 text-sm">
             Ingen billede
           </div>
         )}

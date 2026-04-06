@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -15,6 +15,7 @@ import {
   MapPin,
   Shield,
   Clock,
+  ChevronDown,
 } from 'lucide-react';
 
 interface Category {
@@ -47,6 +48,18 @@ export default function Header() {
   });
 
   const parentCategories = categories.filter((c) => c.parentId === null && c.count > 0);
+
+  // Build children lookup for dropdown menus
+  const childrenByParentId = useMemo(() => {
+    const map: Record<number, Category[]> = {};
+    for (const c of categories) {
+      if (c.parentId !== null) {
+        if (!map[c.parentId]) map[c.parentId] = [];
+        map[c.parentId].push(c);
+      }
+    }
+    return map;
+  }, [categories]);
 
   const updateCSSVar = useCallback(() => {
     const h = wrapperRef.current?.getBoundingClientRect().height || 0;
@@ -104,7 +117,7 @@ export default function Header() {
     }
   };
 
-  const isActiveCategory = (slug: string) => location === `/shop/${slug}`;
+  const isActiveCategory = (slug: string) => location === `/shop/${slug}` || location.startsWith(`/shop/${slug}/`);
   const isActiveRoute = (path: string) => location === path;
 
   return (
@@ -248,32 +261,54 @@ export default function Header() {
             </div>
           </div>
 
-          {/* ═══ Category text links row (Plantorama-style, inside white header) ═══ */}
+          {/* ═══ Category navigation row with dropdowns ═══ */}
           {!scrolled && (
-          <div className="hidden lg:flex items-center justify-center gap-1 pb-2">
-            <Link
-              href="/shop"
-              className={`px-3 py-1.5 text-[14px] font-medium rounded-md transition-colors ${
-                isActiveRoute('/shop')
-                  ? 'text-[var(--grus-green)] bg-green-50'
-                  : 'text-gray-700 hover:text-[var(--grus-green)] hover:bg-gray-50'
-              }`}
-            >
-              Alle produkter
-            </Link>
-            {parentCategories.slice(0, 6).map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/shop/${cat.slug}`}
-                className={`px-3 py-1.5 text-[14px] font-medium rounded-md transition-colors ${
-                  isActiveCategory(cat.slug)
-                    ? 'text-[var(--grus-green)] bg-green-50'
-                    : 'text-gray-700 hover:text-[var(--grus-green)] hover:bg-gray-50'
-                }`}
-              >
-                {cat.name}
-              </Link>
-            ))}
+          <div className="hidden lg:flex items-center justify-center gap-0 pb-2">
+            {parentCategories.map((cat) => {
+              const children = childrenByParentId[cat.id] || [];
+              const hasChildren = children.length > 0;
+
+              return (
+                <div key={cat.id} className="relative group">
+                  <Link
+                    href={`/shop/${cat.slug}`}
+                    className={`flex items-center gap-1 px-3 py-1.5 text-[14px] font-medium rounded-md transition-colors ${
+                      isActiveCategory(cat.slug)
+                        ? 'text-[var(--grus-green)] bg-green-50'
+                        : 'text-gray-700 hover:text-[var(--grus-green)] hover:bg-gray-50'
+                    }`}
+                  >
+                    {cat.name}
+                    {hasChildren && (
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-400 group-hover:text-[var(--grus-green)] transition-transform group-hover:rotate-180" />
+                    )}
+                  </Link>
+                  {/* Dropdown */}
+                  {hasChildren && (
+                    <div className="absolute top-full left-0 pt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                      <div className="bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 min-w-[200px]">
+                        <Link
+                          href={`/shop/${cat.slug}`}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:text-[var(--grus-green)] hover:bg-green-50 transition-colors font-medium"
+                        >
+                          Alle {cat.name.toLowerCase()}
+                        </Link>
+                        <div className="h-px bg-gray-100 mx-3 my-1" />
+                        {children.map((child) => (
+                          <Link
+                            key={child.id}
+                            href={`/shop/${cat.slug}/${child.slug}`}
+                            className="block px-4 py-2 text-sm text-gray-600 hover:text-[var(--grus-green)] hover:bg-green-50 transition-colors"
+                          >
+                            {child.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <Link
               href="/volumenberegner"
               className={`px-3 py-1.5 text-[14px] font-medium rounded-md transition-colors ${
@@ -283,16 +318,6 @@ export default function Header() {
               }`}
             >
               Beregner
-            </Link>
-            <Link
-              href="/om-os"
-              className={`px-3 py-1.5 text-[14px] font-medium rounded-md transition-colors ${
-                isActiveRoute('/om-os')
-                  ? 'text-[var(--grus-green)] bg-green-50'
-                  : 'text-gray-700 hover:text-[var(--grus-green)] hover:bg-gray-50'
-              }`}
-            >
-              Om os
             </Link>
           </div>
           )}
