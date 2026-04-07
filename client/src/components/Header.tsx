@@ -463,7 +463,7 @@ export default function Header() {
               <img
                 src="/images/gruslevering-logo.png"
                 alt="Gruslevering.dk"
-                className="h-10 lg:h-[52px] w-auto"
+                className="h-12 lg:h-[52px] w-auto"
               />
               <div className="hidden sm:flex flex-col leading-tight text-gray-900">
                 <span className="text-[17px] lg:text-[20px] font-bold tracking-tight">Gruslevering.dk</span>
