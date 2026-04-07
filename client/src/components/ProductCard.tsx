@@ -97,7 +97,10 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Button */}
       <div className="px-3 pb-3">
         {hasVariants ? (
-          <span className="block w-full text-center py-2.5 rounded-lg text-[13px] font-semibold text-[var(--grus-green)] bg-green-50 group-hover:bg-green-100 transition-colors">
+          <span
+            className="block w-full text-center py-2.5 rounded-lg text-[13px] font-semibold text-white transition-colors"
+            style={{ backgroundColor: 'var(--grus-green)' }}
+          >
             Vælg variant &rarr;
           </span>
         ) : (
