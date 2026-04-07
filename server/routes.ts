@@ -91,6 +91,33 @@ export async function registerRoutes(
     }
   });
 
+  // GET /api/payment-methods — fetch enabled payment gateways from WooCommerce
+  app.get('/api/payment-methods', async (req, res) => {
+    try {
+      const gateways = await wcGet<any[]>('/payment_gateways');
+      const enabled = gateways
+        .filter((g) => g.enabled === true)
+        .map((g) => ({
+          id: g.id,
+          title: g.title,
+          description: g.description || '',
+          icon: g.id === 'worldline' || g.id === 'bambora' ? '/icons/worldline.svg'
+            : g.id === 'paypal' ? '/icons/paypal.svg'
+            : g.id === 'viabill' ? '/icons/viabill.svg'
+            : null,
+          order: g.order || 0,
+        }))
+        .sort((a, b) => a.order - b.order);
+
+      // Cache for 5 minutes
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.json({ methods: enabled });
+    } catch (err: any) {
+      console.error('Error fetching payment methods:', err);
+      res.status(500).json({ error: 'Kunne ikke hente betalingsmetoder' });
+    }
+  });
+
   // POST /api/orders — create an order in WooCommerce + local DB
   app.post('/api/orders', async (req, res) => {
     try {

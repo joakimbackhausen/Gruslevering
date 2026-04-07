@@ -98,6 +98,7 @@ export interface CreateOrderInput {
   shippingRateId?: string;
   shippingMethodTitle?: string;
   shippingTotal?: string;
+  paymentMethod?: string;
   pickupPointId?: string;
   pickupPointName?: string;
   pickupPointAddress?: string;
@@ -423,7 +424,7 @@ export async function createOrder(
     billing: addressData,
     shipping: addressData,
     shippingRateId: input.shippingRateId,
-    paymentMethod: "worldline",
+    paymentMethod: input.paymentMethod || "worldline",
     customerNote: input.notes || "",
   });
 

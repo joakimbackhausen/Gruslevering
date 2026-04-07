@@ -15,6 +15,7 @@ import {
   Package,
   Loader2,
   AlertCircle,
+  CreditCard,
 } from 'lucide-react';
 
 function formatPrice(price: number): string {
@@ -34,6 +35,13 @@ interface ShippingRate {
   priceFormatted: string;
   deliveryTime: string;
   selected: boolean;
+}
+
+interface PaymentMethod {
+  id: string;
+  title: string;
+  description: string;
+  icon: string | null;
 }
 
 interface PickupPoint {
@@ -78,6 +86,7 @@ const stepLabels = [
   { num: 1, label: 'Kurv' },
   { num: 2, label: 'Oplysninger' },
   { num: 3, label: 'Levering' },
+  { num: 4, label: 'Betaling' },
 ];
 
 export default function Checkout() {
@@ -96,6 +105,9 @@ export default function Checkout() {
   const [selectedPickupPoint, setSelectedPickupPoint] = useState<PickupPoint | null>(null);
   const [pickupLoading, setPickupLoading] = useState(false);
   const [pickupError, setPickupError] = useState('');
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
 
   function getItemKey(item: { id: string; variant?: string }) {
     return item.variant ? `${item.id}-${item.variant}` : item.id;
@@ -186,6 +198,30 @@ export default function Checkout() {
     }
   }, [step, fetchShippingRates]);
 
+  /* ── Fetch payment methods ───────────────────────────────── */
+  useEffect(() => {
+    if (step === 4 && paymentMethods.length === 0) {
+      setPaymentMethodsLoading(true);
+      fetch('/api/payment-methods')
+        .then((r) => r.json())
+        .then((data) => {
+          const methods: PaymentMethod[] = data.methods || [];
+          setPaymentMethods(methods);
+          // Auto-select first method
+          if (methods.length > 0 && !selectedPaymentMethod) {
+            setSelectedPaymentMethod(methods[0]);
+          }
+        })
+        .catch(() => {
+          // Fallback: show Worldline as default
+          const fallback: PaymentMethod = { id: 'worldline', title: 'Bambora Online Checkout / Worldline', description: 'Betal med Visa, Mastercard eller MobilePay', icon: null };
+          setPaymentMethods([fallback]);
+          setSelectedPaymentMethod(fallback);
+        })
+        .finally(() => setPaymentMethodsLoading(false));
+    }
+  }, [step]);
+
   /* ── Pickup point (pakkeshop) logic ──────────────────────── */
   function needsPickupPoint(rate: ShippingRate | null): boolean {
     if (!rate) return false;
@@ -267,6 +303,11 @@ export default function Checkout() {
       return;
     }
 
+    if (!selectedPaymentMethod) {
+      setSubmitError('V\u00e6lg venligst en betalingsmetode');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError('');
 
@@ -303,6 +344,9 @@ export default function Checkout() {
           variantSelections: item.variantSelections,
         })),
       };
+
+      // Include selected payment method
+      body.paymentMethod = selectedPaymentMethod?.id || 'worldline';
 
       // Include pickup point data if selected
       if (selectedPickupPoint) {
@@ -368,6 +412,18 @@ export default function Checkout() {
     if (rate.methodId === 'local_pickup') return <MapPin className="w-6 h-6" />;
     if (rate.methodId === 'shipmondo') return <Package className="w-6 h-6" />;
     return <Truck className="w-6 h-6" />;
+  }
+
+  /* ── Payment icon helper ────────────────────────────────── */
+  function getPaymentIcon(method: PaymentMethod) {
+    const id = method.id.toLowerCase();
+    if (id.includes('paypal')) {
+      return <span className="text-[20px] font-bold text-[#003087]">P</span>;
+    }
+    if (id.includes('viabill')) {
+      return <span className="text-[14px] font-bold text-[#60b963]">ViaBill</span>;
+    }
+    return <CreditCard className="w-6 h-6" />;
   }
 
   const shippingCost = selectedShippingRate?.price ?? 0;
@@ -894,12 +950,6 @@ export default function Checkout() {
                       </div>
                     )}
 
-                    {submitError && (
-                      <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-[14px] text-red-700">
-                        {submitError}
-                      </div>
-                    )}
-
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => setStep(2)}
@@ -908,8 +958,98 @@ export default function Checkout() {
                         Tilbage
                       </button>
                       <button
+                        onClick={() => setStep(4)}
+                        disabled={shippingLoading || !selectedShippingRate || pickupLoading || (needsPickupPoint(selectedShippingRate) && !selectedPickupPoint)}
+                        className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-3.5 px-8 rounded-lg transition-colors"
+                      >
+                        Forts&aelig;t
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Step 4: Payment ── */}
+                {step === 4 && (
+                  <div>
+                    <h2 className="text-[22px] font-bold text-[#1a1a1a] mb-6">
+                      V&aelig;lg betalingsmetode
+                    </h2>
+
+                    {paymentMethodsLoading && (
+                      <div className="flex items-center gap-3 py-10 justify-center">
+                        <Loader2 className="w-6 h-6 text-green-600 animate-spin" />
+                        <span className="text-[15px] text-gray-500">Henter betalingsmuligheder...</span>
+                      </div>
+                    )}
+
+                    {!paymentMethodsLoading && paymentMethods.length > 0 && (
+                      <div className="space-y-3 mb-8">
+                        {paymentMethods.map((method) => {
+                          const isSelected = selectedPaymentMethod?.id === method.id;
+                          return (
+                            <button
+                              key={method.id}
+                              onClick={() => setSelectedPaymentMethod(method)}
+                              className={`w-full flex items-start gap-4 p-5 rounded-xl border-2 text-left transition-all ${
+                                isSelected
+                                  ? 'border-green-500 bg-green-50/50 shadow-sm'
+                                  : 'border-gray-200 hover:border-gray-300 bg-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 flex-shrink-0 mt-0.5">
+                                <div
+                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                    isSelected ? 'border-green-500' : 'border-gray-300'
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                  )}
+                                </div>
+                                <span className={isSelected ? 'text-green-600' : 'text-gray-400'}>
+                                  {getPaymentIcon(method)}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <span className="text-[15px] font-semibold text-[#1a1a1a]">
+                                  {method.title}
+                                </span>
+                                {method.description && (
+                                  <p className="text-[13px] text-gray-500 mt-1">{method.description.replace(/<[^>]*>/g, '')}</p>
+                                )}
+                                {/* Show card icons for Worldline/Bambora */}
+                                {(method.id === 'worldline' || method.id === 'bambora' || method.id.includes('bambora')) && (
+                                  <div className="flex items-center gap-2 mt-2.5">
+                                    {['Visa', 'Mastercard', 'Maestro', 'MobilePay'].map((card) => (
+                                      <span key={card} className="text-[11px] bg-gray-100 text-gray-600 px-2 py-1 rounded font-medium">
+                                        {card}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {submitError && (
+                      <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-[14px] text-red-700">
+                        {submitError}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => setStep(3)}
+                        className="border border-gray-200 text-[#1a1a1a] font-medium py-3.5 px-8 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Tilbage
+                      </button>
+                      <button
                         onClick={submitOrder}
-                        disabled={submitting || shippingLoading || !selectedShippingRate || pickupLoading || (needsPickupPoint(selectedShippingRate) && !selectedPickupPoint)}
+                        disabled={submitting || !selectedPaymentMethod}
                         className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-3.5 px-8 rounded-lg transition-colors flex items-center gap-2"
                       >
                         {submitting ? (
@@ -995,6 +1135,12 @@ export default function Checkout() {
                             </div>
                           )}
                         </>
+                      )}
+                      {step >= 4 && selectedPaymentMethod && (
+                        <div className="flex justify-between text-[14px]">
+                          <span className="text-gray-500">Betaling</span>
+                          <span className="font-medium text-[#1a1a1a]">{selectedPaymentMethod.title}</span>
+                        </div>
                       )}
                       <div className="border-t border-gray-100 pt-3 flex justify-between">
                         <span className="text-[16px] font-bold text-[#1a1a1a]">
