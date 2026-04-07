@@ -440,7 +440,7 @@ export async function createOrder(
             method_id: input.shippingRateId.split(":")[0] || input.shippingRateId,
             method_title: input.shippingMethodTitle || input.deliveryMethod,
             total: input.shippingTotal || "0",
-            instance_id: parseInt(input.shippingRateId.split(":")[1]) || undefined,
+            instance_id: input.shippingRateId.split(":")[1] || undefined,
           },
         ]
       : [],
