@@ -199,27 +199,26 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══ CATEGORY TILES (matching gruslevering.dk/nytestforside exactly) ═══ */}
+        {/* ═══ CATEGORY TILES (exact masonry layout from nytestforside) ═══ */}
         <section className="px-4 sm:px-6 lg:px-8 mt-4">
           <div className="max-w-[1400px] mx-auto">
-            {/* Top row: 4 tiles */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-              {CATEGORY_TILES.filter((t) => !t.wide).map((tile, i) => (
+            {/* Mobile: simple 2-col grid */}
+            <div className="grid grid-cols-2 gap-3 lg:hidden">
+              {CATEGORY_TILES.map((tile, i) => (
                 <Reveal key={tile.label} delay={i * 60}>
                   <Link
                     href={tile.href}
-                    className="group relative aspect-[3/4] sm:aspect-[4/5] rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300"
+                    className={`group relative rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300 ${tile.wide ? 'col-span-2 aspect-[16/7]' : 'aspect-[3/4]'}`}
                   >
                     <SmartImage
                       src={tile.image}
                       alt={tile.label}
                       className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
                       width={400}
-                      sizes="(max-width: 640px) 45vw, 25vw"
+                      sizes="45vw"
                     />
-                    <div className="absolute top-0 left-0 right-0 p-4 lg:p-5">
-                      <p className="text-gray-900 font-extrabold text-base sm:text-lg lg:text-xl leading-tight uppercase tracking-wide"
-                         style={{ textShadow: '0 1px 3px rgba(255,255,255,0.6)' }}>
+                    <div className="absolute top-0 left-0 right-0 p-3">
+                      <p className="text-white font-extrabold text-base leading-tight uppercase tracking-wide drop-shadow-lg">
                         {tile.label}
                       </p>
                     </div>
@@ -227,30 +226,116 @@ export default function Home() {
                 </Reveal>
               ))}
             </div>
-            {/* Bottom row: wide tile spanning 3 of 4 columns (centered) */}
-            {CATEGORY_TILES.filter((t) => t.wide).map((tile) => (
-              <Reveal key={tile.label} delay={250}>
-                <div className="mt-3 lg:mt-4 lg:px-[12.5%]">
-                  <Link
-                    href={tile.href}
-                    className="group relative rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300 aspect-[16/7] sm:aspect-[16/6]"
-                  >
-                    <SmartImage
-                      src={tile.image}
-                      alt={tile.label}
-                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                      width={900}
-                      sizes="(max-width: 640px) 95vw, 75vw"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <p className="text-white font-extrabold text-xl sm:text-2xl lg:text-3xl uppercase tracking-wide drop-shadow-lg">
-                        {tile.label}
-                      </p>
-                    </div>
-                  </Link>
+
+            {/* Desktop: exact masonry layout matching nytestforside
+                ┌──────────┬──────────┬──────────┬──────────┐
+                │          │ Muld og  │ Plante   │          │
+                │ Granit-  │  jord    │ kasser   │ Dækbark  │
+                │ skærver  │          │          │          │
+                │ (tall)   ├──────────┴──────────┤ (tall)   │
+                │          │   Plantekasser      │          │
+                └──────────┴─────────────────────┴──────────┘ */}
+            <div className="hidden lg:grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', gridTemplateRows: '2fr 1fr' }}>
+              {/* Granitskærver - col 1, spans both rows */}
+              <Link
+                href={CATEGORY_TILES[0].href}
+                className="group relative rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300"
+                style={{ gridColumn: '1', gridRow: '1 / 3' }}
+              >
+                <SmartImage
+                  src={CATEGORY_TILES[0].image}
+                  alt={CATEGORY_TILES[0].label}
+                  className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                  width={400}
+                  sizes="25vw"
+                />
+                <div className="absolute top-0 left-0 right-0 p-5">
+                  <p className="text-white font-extrabold text-xl leading-tight uppercase tracking-wide drop-shadow-lg">
+                    {CATEGORY_TILES[0].label}
+                  </p>
                 </div>
-              </Reveal>
-            ))}
+              </Link>
+
+              {/* Muld og jord - col 2, top row */}
+              <Link
+                href={CATEGORY_TILES[1].href}
+                className="group relative rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300"
+                style={{ gridColumn: '2', gridRow: '1' }}
+              >
+                <SmartImage
+                  src={CATEGORY_TILES[1].image}
+                  alt={CATEGORY_TILES[1].label}
+                  className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                  width={400}
+                  sizes="25vw"
+                />
+                <div className="absolute top-0 left-0 right-0 p-5">
+                  <p className="text-white font-extrabold text-xl leading-tight uppercase tracking-wide drop-shadow-lg">
+                    {CATEGORY_TILES[1].label}
+                  </p>
+                </div>
+              </Link>
+
+              {/* Plante kasser - col 3, top row */}
+              <Link
+                href={CATEGORY_TILES[2].href}
+                className="group relative rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300"
+                style={{ gridColumn: '3', gridRow: '1' }}
+              >
+                <SmartImage
+                  src={CATEGORY_TILES[2].image}
+                  alt={CATEGORY_TILES[2].label}
+                  className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                  width={400}
+                  sizes="25vw"
+                />
+                <div className="absolute top-0 left-0 right-0 p-5">
+                  <p className="text-white font-extrabold text-xl leading-tight uppercase tracking-wide drop-shadow-lg">
+                    {CATEGORY_TILES[2].label}
+                  </p>
+                </div>
+              </Link>
+
+              {/* Dækbark - col 4, spans both rows */}
+              <Link
+                href={CATEGORY_TILES[3].href}
+                className="group relative rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300"
+                style={{ gridColumn: '4', gridRow: '1 / 3' }}
+              >
+                <SmartImage
+                  src={CATEGORY_TILES[3].image}
+                  alt={CATEGORY_TILES[3].label}
+                  className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                  width={400}
+                  sizes="25vw"
+                />
+                <div className="absolute top-0 left-0 right-0 p-5">
+                  <p className="text-white font-extrabold text-xl leading-tight uppercase tracking-wide drop-shadow-lg">
+                    {CATEGORY_TILES[3].label}
+                  </p>
+                </div>
+              </Link>
+
+              {/* Plantekasser - col 2-3, bottom row */}
+              <Link
+                href={CATEGORY_TILES[4].href}
+                className="group relative rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300"
+                style={{ gridColumn: '2 / 4', gridRow: '2' }}
+              >
+                <SmartImage
+                  src={CATEGORY_TILES[4].image}
+                  alt={CATEGORY_TILES[4].label}
+                  className="w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-500"
+                  width={700}
+                  sizes="50vw"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-white font-extrabold text-2xl uppercase tracking-wide drop-shadow-lg">
+                    {CATEGORY_TILES[4].label}
+                  </p>
+                </div>
+              </Link>
+            </div>
           </div>
         </section>
 
