@@ -1,23 +1,16 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowRight,
-  Truck,
-  Calculator,
-  CheckCircle,
-  Leaf,
-  HeartHandshake,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SmartImage from '@/components/SmartImage';
 import ProductCard from '@/components/ProductCard';
-import type { Product, Category } from '@/types/product';
+import type { Product } from '@/types/product';
 
-/* -- Reveal (simple fade-in on scroll) -- */
+/* ------------------------------------------------------------------ */
+/*  Reveal (fade-in on scroll)                                         */
+/* ------------------------------------------------------------------ */
 
 function Reveal({
   children,
@@ -35,9 +28,7 @@ function Reveal({
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) setVisible(true);
-      },
+      ([e]) => { if (e.isIntersecting) setVisible(true); },
       { threshold: 0.08 },
     );
     obs.observe(el);
@@ -57,21 +48,87 @@ function Reveal({
   );
 }
 
-/* -- Gradient placeholders for categories -- */
+/* ------------------------------------------------------------------ */
+/*  Category tiles (matching gruslevering.dk/nytestforside)             */
+/* ------------------------------------------------------------------ */
 
-const categoryGradients = [
-  'linear-gradient(135deg, #1B6B28 0%, #0D3B16 100%)',
-  'linear-gradient(135deg, #145520 0%, #1B6B28 100%)',
-  'linear-gradient(135deg, #0D3B16 0%, #1B6B28 100%)',
-  'linear-gradient(135deg, #1B6B28 0%, #145520 100%)',
-  'linear-gradient(135deg, #145520 0%, #0D3B16 100%)',
-  'linear-gradient(135deg, #0D3B16 0%, #145520 100%)',
-  'linear-gradient(135deg, #1B6B28 0%, #0D3B16 100%)',
-  'linear-gradient(135deg, #145520 0%, #1B6B28 100%)',
+const CATEGORY_TILES = [
+  {
+    label: 'Granitskærver',
+    href: '/shop/granitskaerver-sten-pyntesten/granitskaerver',
+    image: 'https://gruslevering.dk/wp-content/uploads/2018/03/sortgranit.png',
+  },
+  {
+    label: 'Muld og\ntopdressing',
+    href: '/shop/muldjord',
+    image: 'https://gruslevering.dk/wp-content/uploads/2019/11/Gartnermuld-HG.png',
+  },
+  {
+    label: 'Pyntesten',
+    href: '/shop/granitskaerver-sten-pyntesten/pyntesten-kategori',
+    image: 'https://gruslevering.dk/wp-content/uploads/2018/08/VM541110-pigsten-150-300-bigbag-a-1000-kg.jpg',
+  },
+  {
+    label: 'Pinjebark\n& bunddække',
+    href: '/shop/traeflis',
+    image: 'https://gruslevering.dk/wp-content/uploads/2021/02/bigbag-pinjebark-ny.jpg',
+  },
+  {
+    label: 'Højbede &\nplantekasser',
+    href: '/shop/hus-og-have/hoejbede-og-plantekasser',
+    image: 'https://gruslevering.dk/wp-content/uploads/2026/02/hoejbede-braendt.png',
+    wide: true,
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Bestseller product slugs                                            */
+/* ------------------------------------------------------------------ */
+
+const BESTSELLER_SLUGS = [
+  'granitskaerver-sort-11-16-mm',
+  'pyntesten-hvide-16-32-mm',
+  'pinjebark',
+  'stobemix-0-8mm-1000kg-125kg-cement',
+  'topdressing-vaekst',
+  'hojbedsmuld-hg',
+  'harpet-muld-hg-100-organisk-jord',
+  'stenmel-sort-0-2mm',
+];
+
+/* ------------------------------------------------------------------ */
+/*  Haveguide articles                                                  */
+/* ------------------------------------------------------------------ */
+
+const HAVEGUIDE_ARTICLES = [
+  {
+    title: 'Komplet guide til muld og jord',
+    desc: 'Vælg den rigtige jord til dit haveprojekt',
+    href: 'https://gruslevering.dk/komplet-guide-til-muld-og-jord/',
+    image: 'https://gruslevering.dk/wp-content/uploads/2026/02/ChatGPT-Image-17.-feb.-2026-18.44.55-e1771493007832.png',
+  },
+  {
+    title: 'Sådan etablerer du en ny græsplæne',
+    desc: 'Trin for trin – 100% korrekt',
+    href: 'https://gruslevering.dk/saadan-etablerer-du-en-ny-graesplaene/',
+    image: 'https://gruslevering.dk/wp-content/uploads/2026/02/ok-e1773057103439.png',
+  },
+  {
+    title: 'Granitskærver – den komplette guide 2026',
+    desc: 'Alt om valg, anvendelse og vedligeholdelse',
+    href: 'https://gruslevering.dk/granitskaerver-guide/',
+    image: 'https://gruslevering.dk/wp-content/uploads/2025/11/graa-granit-18-25mm.jpg',
+  },
+  {
+    title: 'Flis: Guide til bunddækkematerialer',
+    desc: 'Valg, anvendelse og pleje',
+    href: 'https://gruslevering.dk/flis-pinjebark-bundaekke-daekbark-kakaoflis/',
+    image: 'https://gruslevering.dk/wp-content/uploads/2025/10/Pinjebark-20-40-pose-e1770390187304.png',
+  },
 ];
 
 /* ================================================================
-   HOME PAGE - Plantorama-style layout
+   HOME PAGE
    ================================================================ */
 
 export default function Home() {
@@ -84,384 +141,279 @@ export default function Home() {
     queryFn: () => fetch('/api/products').then((r) => r.json()),
   });
 
-  const { data: categories = [], isLoading: loadingCategories } = useQuery<Category[]>({
-    queryKey: ['categories'],
-    queryFn: () => fetch('/api/categories').then((r) => r.json()),
-  });
-
-  const parentCategories = categories
-    .filter((c) => c.parentId === null)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8);
-
-  // Fallback images: pick first product image per category for categories without images
-  const categoryFallbackImages = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const cat of parentCategories) {
-      if (!cat.image) {
-        const productInCat = products.find(
-          (p) => p.categorySlug === cat.slug || p.parentCategorySlug === cat.slug,
-        );
-        if (productInCat?.image) {
-          map[cat.slug] = productInCat.image;
-        }
-      }
-    }
-    return map;
-  }, [parentCategories, products]);
-
-  const featuredProducts = products.slice(0, 8);
-
-  /* Product carousel scroll */
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const scrollCarousel = (dir: 'left' | 'right') => {
-    if (!carouselRef.current) return;
-    const amount = carouselRef.current.offsetWidth * 0.8;
-    carouselRef.current.scrollBy({
-      left: dir === 'left' ? -amount : amount,
-      behavior: 'smooth',
-    });
-  };
+  // Pick bestseller products by slug
+  const bestsellers = useMemo(() => {
+    if (products.length === 0) return [];
+    return BESTSELLER_SLUGS
+      .map((slug) => products.find((p) => p.slug === slug))
+      .filter((p): p is Product => p !== undefined);
+  }, [products]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
 
-      {/* ═══ PROMOTIONAL BANNERS (Plantorama-style colored bars) ═══ */}
-      <div
-        className="grid grid-cols-1 sm:grid-cols-2 gap-2 px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto w-full mt-2"
-        style={{ paddingTop: 'var(--header-h, 164px)' }}
-      >
-        <Link
-          href="/levering"
-          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white text-[13px] font-semibold transition-all hover:opacity-90 hover:shadow-md"
-          style={{ backgroundColor: '#2B5B2B' }}
-        >
-          <Truck className="w-4 h-4 shrink-0" />
-          Fri levering på alle ordrer &ndash; se betingelser her
-        </Link>
-        <Link
-          href="/volumenberegner"
-          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white text-[13px] font-semibold transition-all hover:opacity-90 hover:shadow-md"
-          style={{ backgroundColor: '#D4844C' }}
-        >
-          <Calculator className="w-4 h-4 shrink-0" />
-          Beregn hvor meget materiale du skal bruge
-        </Link>
-      </div>
+      <main style={{ paddingTop: 'var(--header-h, 164px)' }}>
 
-      {/* ═══ HERO BANNER (Plantorama-style full-width image with text overlay) ═══ */}
-      <section className="mt-3 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-[1400px] mx-auto">
-          <div
-            className="relative rounded-2xl overflow-hidden min-h-[300px] sm:min-h-[400px] lg:min-h-[500px] flex items-center"
-          >
-            {/* Background image */}
-            {/* Hero image - delivery truck from gruslevering.dk */}
-            <img
-              src="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600"
-              srcSet="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=400 400w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600 600w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400 1400w"
-              sizes="(max-width: 640px) 100vw, 1400px"
-              alt="Grus, sten og jord leveret til døren"
-              className="absolute inset-0 w-full h-full object-cover"
-              fetchPriority="high"
-              decoding="sync"
-              width={1400}
-              height={500}
-            />
-            {/* Dark overlay for readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+        {/* ═══ HERO BANNER ═══ */}
+        <section className="px-4 sm:px-6 lg:px-8 pt-2">
+          <div className="max-w-[1400px] mx-auto">
+            <div className="relative rounded-2xl overflow-hidden min-h-[280px] sm:min-h-[380px] lg:min-h-[480px] flex items-center">
+              <img
+                src="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600"
+                srcSet="/api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=400 400w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=600 600w, /api/img?url=https%3A%2F%2Fgruslevering.dk%2Fwp-content%2Fuploads%2F2026%2F03%2Fimage.jpg&w=1400 1400w"
+                sizes="(max-width: 640px) 100vw, 1400px"
+                alt="Grus, sten og jord leveret til døren"
+                className="absolute inset-0 w-full h-full object-cover"
+                fetchPriority="high"
+                decoding="sync"
+                width={1400}
+                height={500}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
 
-            {/* Content - inspired by gruslevering.dk nytestforside */}
-            <div className="relative z-10 px-8 lg:px-16 py-14 lg:py-20 max-w-3xl">
-              <h1 className="font-display font-extrabold text-white text-[28px] sm:text-[40px] lg:text-[56px] uppercase leading-[1.05] mb-5 tracking-tight drop-shadow-lg">
-                Grus, sten og jord
-                <br />
-                leveret direkte
-                <br />
-                til døren
-              </h1>
-
-              <p className="text-white/80 text-base lg:text-lg mb-8 max-w-md leading-relaxed drop-shadow">
-                Big bags i højkvalitet &ndash; Fri levering i hele landet
-              </p>
-
-              {/* CTA */}
-              <Link
-                href="/shop"
-                className="inline-flex items-center gap-2 font-bold text-base lg:text-lg px-8 lg:px-10 py-4 rounded-xl shadow-xl hover:shadow-2xl hover:translate-y-[-2px] transition-all text-white"
-                style={{ backgroundColor: '#2B5B2B' }}
-              >
-                Se alle produkter
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ USP BAR ═══ */}
-      <section className="py-6 lg:py-8 border-b border-gray-100">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-y-6 gap-x-4">
-            {[
-              { icon: '🚚', title: 'Gratis levering', desc: 'På alle bigbag produkter' },
-              { icon: '✅', title: 'Kun kvalitet', desc: 'Håndplukkede materialer' },
-              { icon: '📦', title: 'Hurtig levering', desc: '3\u20135 hverdages levering' },
-              { icon: '🏠', title: 'Til din adresse', desc: 'Levering i hele Danmark' },
-              { icon: '💰', title: 'Ingen gebyrer', desc: 'Pris inkl. levering' },
-              { icon: '📞', title: 'Kundeservice', desc: 'Ring 72 49 44 44' },
-            ].map((usp) => (
-              <div key={usp.title} className="flex flex-col items-center text-center">
-                <span className="text-2xl mb-2">{usp.icon}</span>
-                <span className="text-sm font-semibold text-[var(--grus-dark)]">{usp.title}</span>
-                <span className="text-xs text-gray-500 mt-0.5">{usp.desc}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ PRODUCT CAROUSEL SECTION (Plantorama-style with arrows) ═══ */}
-      <section className="py-10 lg:py-14">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <Reveal>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px]">
-                Populære produkter
-              </h2>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => scrollCarousel('left')}
-                  className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:border-gray-400 transition-colors"
-                  aria-label="Scroll venstre"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => scrollCarousel('right')}
-                  className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:border-gray-400 transition-colors"
-                  aria-label="Scroll højre"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </Reveal>
-
-          {loadingProducts ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-100">
-                  <div className="aspect-square bg-gray-100 animate-pulse" />
-                  <div className="p-3 space-y-2">
-                    <div className="h-4 w-3/4 rounded bg-gray-100 animate-pulse" />
-                    <div className="h-5 w-1/3 rounded bg-gray-100 animate-pulse" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <>
-              {/* Scrollable carousel */}
-              <div
-                ref={carouselRef}
-                className="flex gap-4 overflow-x-auto scroll-smooth pb-2"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                <style>{`.product-carousel::-webkit-scrollbar { display: none; }`}</style>
-                {featuredProducts.map((p) => (
-                  <div key={p.id} className="shrink-0 w-[220px] sm:w-[240px] lg:w-[260px]">
-                    <ProductCard product={p} />
-                  </div>
-                ))}
-              </div>
-
-              {/* "See all" link */}
-              <div className="text-center mt-6">
-                <Link
-                  href="/shop"
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--grus-green)] hover:text-[var(--grus-green-hover)] transition-colors"
-                >
-                  Se alle produkter
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* ═══ CATEGORY GRID (Plantorama-style big visual tiles) ═══ */}
-      <section className="py-12 lg:py-16 bg-[#f7f7f5]">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <Reveal>
-            <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] mb-8">
-              Udforsk vores sortiment
-            </h2>
-          </Reveal>
-
-          {loadingCategories ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-5">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="aspect-[4/3] rounded-2xl bg-gray-200 animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-5">
-              {parentCategories.map((cat, i) => (
-                <Reveal key={cat.id} delay={i * 50}>
+              <div className="relative z-10 px-6 sm:px-10 lg:px-16 py-10 lg:py-16 max-w-2xl">
+                <h1 className="font-display font-extrabold text-white text-[26px] sm:text-[36px] lg:text-[50px] leading-[1.1] mb-3 tracking-tight drop-shadow-lg">
+                  Grus, sten & jord
+                  <br />leveret direkte til d&oslash;ren
+                </h1>
+                <p className="text-white/80 text-sm sm:text-base lg:text-lg mb-6 max-w-md leading-relaxed drop-shadow">
+                  Bigbags i h&oslash;j kvalitet &middot; Fri levering i hele<br className="hidden sm:block" /> Skarpe priser
+                </p>
+                <div className="flex flex-wrap gap-3">
                   <Link
-                    href={`/shop/${cat.slug}`}
-                    className="group relative aspect-[4/3] rounded-2xl overflow-hidden block shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                    href="/shop"
+                    className="inline-flex items-center gap-2 font-bold text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all text-[#2B5B2B] bg-[#f5c518]"
                   >
-                    {(cat.image || categoryFallbackImages[cat.slug]) ? (
-                      <SmartImage
-                        src={cat.image || categoryFallbackImages[cat.slug]}
-                        alt={cat.name}
-                        className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500"
-                        width={200}
-                        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 25vw"
-                      />
-                    ) : (
-                      <div
-                        className="w-full h-full group-hover:scale-[1.06] transition-transform duration-500"
-                        style={{ background: categoryGradients[i % categoryGradients.length] }}
-                      />
-                    )}
-                    {/* Darker, richer gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/75 transition-all duration-300" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 lg:p-5">
-                      <p className="text-white font-bold text-base lg:text-lg leading-tight drop-shadow-md">
-                        {cat.name}
-                      </p>
-                      <p className="text-white/70 text-[13px] mt-1 flex items-center gap-1">
-                        {cat.count} produkter
-                        <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                    Se produkter
+                  </Link>
+                  <Link
+                    href="/volumenberegner"
+                    className="inline-flex items-center gap-2 font-bold text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all text-gray-900 bg-white/90 hover:bg-white"
+                  >
+                    Beregn m&aelig;ngde
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ CATEGORY TILES (5 tiles matching nytestforside layout) ═══ */}
+        <section className="px-4 sm:px-6 lg:px-8 mt-4">
+          <div className="max-w-[1400px] mx-auto">
+            {/* Top row: 4 tiles */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+              {CATEGORY_TILES.filter((t) => !t.wide).map((tile, i) => (
+                <Reveal key={tile.label} delay={i * 60}>
+                  <Link
+                    href={tile.href}
+                    className="group relative aspect-[3/4] sm:aspect-[4/5] rounded-2xl overflow-hidden block shadow-md hover:shadow-xl transition-all duration-300"
+                  >
+                    <SmartImage
+                      src={tile.image}
+                      alt={tile.label.replace('\n', ' ')}
+                      className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-500"
+                      width={350}
+                      sizes="(max-width: 640px) 45vw, 25vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                    <div className="absolute top-0 left-0 right-0 p-4 lg:p-5">
+                      <p className="text-white font-extrabold text-lg sm:text-xl lg:text-2xl leading-tight drop-shadow-lg whitespace-pre-line">
+                        {tile.label}
                       </p>
                     </div>
                   </Link>
                 </Reveal>
               ))}
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* ═══ VOLUME CALCULATOR CTA (polished) ═══ */}
-      <section className="py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-[1400px] mx-auto">
-          <Reveal>
-            <div className="relative rounded-2xl overflow-hidden p-8 lg:p-14 flex flex-col lg:flex-row items-center gap-8 lg:gap-14">
-              {/* Background */}
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #2B5B2B 0%, #1B4520 100%)' }} />
-              <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23fff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'20\' cy=\'20\' r=\'2\'/%3E%3C/g%3E%3C/svg%3E")' }} />
-
-              <div className="flex-[3] text-center lg:text-left relative z-10">
-                <span className="inline-block text-green-300 text-xs font-bold uppercase tracking-widest mb-3">Gratis værktøj</span>
-                <h2 className="font-display font-bold text-white text-2xl sm:text-3xl lg:text-[34px] mb-3 leading-tight">
-                  Beregn hvor meget
-                  <br />du har brug for
-                </h2>
-                <p className="text-white/70 text-[15px] max-w-lg mb-7 leading-relaxed">
-                  Brug vores volumenberegner til at finde ud af præcis hvor mange bigbags du skal
-                  bestille. Indtast dine mål og få svar med det samme.
-                </p>
+            {/* Bottom row: wide tile */}
+            {CATEGORY_TILES.filter((t) => t.wide).map((tile) => (
+              <Reveal key={tile.label} delay={250}>
                 <Link
-                  href="/volumenberegner"
-                  className="inline-flex items-center gap-2 bg-white text-[#2B5B2B] font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                  href={tile.href}
+                  className="group relative mt-3 lg:mt-4 rounded-2xl overflow-hidden block shadow-md hover:shadow-xl transition-all duration-300 aspect-[16/6] sm:aspect-[16/5] lg:aspect-[16/4]"
                 >
-                  <Calculator className="w-4.5 h-4.5" />
-                  Prøv beregneren
-                </Link>
-              </div>
-
-              <div className="flex-[2] flex items-center justify-center relative z-10">
-                <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-3xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-2xl border border-white/10">
-                  <Calculator className="w-16 h-16 lg:w-20 lg:h-20 text-white/90" />
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ═══ WHY CHOOSE US (polished cards) ═══ */}
-      <section className="py-12 lg:py-16 bg-white">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <Reveal>
-            <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] text-center mb-10">
-              Hvorfor vælge Gruslevering.dk?
-            </h2>
-          </Reveal>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: CheckCircle,
-                title: 'Nem bestilling',
-                description:
-                  'Bestil materialer online på få minutter. Vælg produkt, mængde og leveringsadresse.',
-              },
-              {
-                icon: Leaf,
-                title: 'Kvalitetsmaterialer',
-                description:
-                  'Vi leverer kun materialer af højeste kvalitet fra pålidelige danske leverandører.',
-              },
-              {
-                icon: HeartHandshake,
-                title: 'Personlig service',
-                description:
-                  'Har du spørgsmål? Vores team er altid klar til at hjælpe dig med at finde det rigtige.',
-              },
-            ].map((item, i) => (
-              <Reveal key={item.title} delay={i * 80}>
-                <div className="text-center p-8 rounded-2xl bg-[#f7f7f5] hover:bg-[#f0f0ec] transition-colors">
-                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: '#2B5B2B' }}>
-                    <item.icon className="w-8 h-8 text-white" />
+                  <SmartImage
+                    src={tile.image}
+                    alt={tile.label.replace('\n', ' ')}
+                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                    width={800}
+                    sizes="(max-width: 640px) 95vw, 1400px"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+                  <div className="absolute top-0 left-0 p-5 lg:p-8">
+                    <p className="text-white font-extrabold text-xl sm:text-2xl lg:text-3xl leading-tight drop-shadow-lg whitespace-pre-line">
+                      {tile.label}
+                    </p>
                   </div>
-                  <h3 className="font-display font-bold text-gray-900 text-lg mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-500 text-[14px] leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
+                </Link>
               </Reveal>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ═══ FOOTER CTA ═══ */}
-      <section className="py-16 lg:py-20" style={{ backgroundColor: '#2B5B2B' }}>
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Reveal>
-            <h2 className="font-display font-bold text-white text-2xl sm:text-3xl lg:text-4xl mb-4">
-              Klar til at komme i gang?
-            </h2>
-            <p className="text-white/60 text-base sm:text-lg mb-8 max-w-md mx-auto">
-              Udforsk vores sortiment og bestil materialer med fri levering til hele Danmark
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link
-                href="/shop"
-                className="inline-flex items-center gap-2 bg-white text-[#2B5B2B] font-bold px-7 py-3.5 rounded-xl shadow-lg hover:shadow-xl transition-all"
-              >
-                Se produkter
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/kontakt"
-                className="inline-flex items-center gap-2 border-2 border-white/30 text-white font-semibold px-7 py-3.5 rounded-xl hover:bg-white/10 transition-colors"
-              >
-                Kontakt os
-              </Link>
+        {/* ═══ HVORFOR KUNDERNE VÆLGER OS ═══ */}
+        <section className="py-10 lg:py-14">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <Reveal>
+              <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] mb-6">
+                Hvorfor kunderne v&aelig;lger os
+              </h2>
+            </Reveal>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-5">
+              {[
+                { icon: '🚚', text: 'Fri levering i hele Danmark' },
+                { icon: '🔨', text: 'Kun kvalitetsmaterialer' },
+                { icon: '🇩🇰', text: 'Dansk familieejet siden 2008' },
+                { icon: '🚛', text: 'Express \u2013 Kran eller mobiltruck' },
+                { icon: '⭐', text: '4.8 \u2605 Trustpilot' },
+                { icon: '💰', text: 'Prisgaranti p\u00e5 mange produkter' },
+              ].map((usp) => (
+                <Reveal key={usp.text}>
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50">
+                    <span className="text-xl shrink-0 mt-0.5">{usp.icon}</span>
+                    <span className="text-sm font-medium text-gray-800 leading-snug">{usp.text}</span>
+                  </div>
+                </Reveal>
+              ))}
             </div>
-          </Reveal>
-        </div>
-      </section>
+            <p className="text-xs text-gray-400 mt-4">
+              * 98% af ordre bliver leveret indenfor 48 timer.
+            </p>
+          </div>
+        </section>
+
+        {/* ═══ BESTSELLERE ═══ */}
+        <section className="pb-12 lg:pb-16">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <Reveal>
+              <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] mb-6">
+                Bestsellere
+              </h2>
+            </Reveal>
+
+            {loadingProducts ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-100">
+                    <div className="aspect-square bg-gray-100 animate-pulse" />
+                    <div className="p-3 space-y-2">
+                      <div className="h-4 w-3/4 rounded bg-gray-100 animate-pulse" />
+                      <div className="h-5 w-1/3 rounded bg-gray-100 animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {bestsellers.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+                <div className="text-center mt-8">
+                  <Link
+                    href="/shop"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--grus-green)] hover:text-[var(--grus-green-hover)] transition-colors"
+                  >
+                    Se alle produkter
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* ═══ MEST LÆSTE FRA DEN STORE HAVEGUIDE ═══ */}
+        <section className="py-12 lg:py-16 bg-[#f7f7f5]">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <Reveal>
+              <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] mb-8">
+                Mest l&aelig;ste fra den store haveguide
+              </h2>
+            </Reveal>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+              {HAVEGUIDE_ARTICLES.map((article, i) => (
+                <Reveal key={article.title} delay={i * 80}>
+                  <a
+                    href={article.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100"
+                  >
+                    <div className="aspect-[16/10] overflow-hidden">
+                      <SmartImage
+                        src={article.image}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-500"
+                        width={350}
+                        sizes="(max-width: 640px) 95vw, (max-width: 1024px) 45vw, 25vw"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-[var(--grus-green)] transition-colors">
+                        {article.title}
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-1">{article.desc}</p>
+                    </div>
+                  </a>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ SEO TEXT SECTIONS ═══ */}
+        <section className="py-12 lg:py-16">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl">
+              <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl mb-4">
+                Gruslevering.dk &ndash; din leverand&oslash;r af billig grus, sand, granit og jord i bigbags
+              </h2>
+              <div className="prose prose-sm prose-gray max-w-none text-gray-600 leading-relaxed space-y-4">
+                <p>
+                  Gruslevering.dk er K&aelig;rvang Materialers online platform for levering af grus, sand, muld, granit, flis og pinjebark i bigbags og i poser, hvilket vil sige, at alt p&aring; siden er til direkte levering i bigbags med fragtmand, kranbil eller medbringer truck. K&aelig;rvang Materialer ApS har siden 2008 handlet med sand, grus, granitsk&aelig;rver, muld, flis, spagnum, st&oslash;beprodukter osv. S&oslash;ger du billig grus til din indk&oslash;rsel, haven eller n&aelig;ste byggeri, s&aring; hj&aelig;lper vi gerne &ndash; hos os handler du med folk som selv har arbejdet med produkterne til daglig. Du er velkommen til at bruge vores <Link href="/volumenberegner" className="text-[var(--grus-green)] hover:underline font-medium">m&aelig;ngdeberegner</Link>, der kan vejlede dig i k&oslash;bet. Vores store erfaring betyder, at vi kan vejlede dig til det rigtige produkt eller m&aelig;ngde, og derfor er du som kunde altid velkommen til at kontakte os p&aring; telefon alle hverdage kl. 8.00&ndash;16.00 eller p&aring; mail: <a href="mailto:info@kaervangmaterialer.dk" className="text-[var(--grus-green)] hover:underline font-medium">info@kaervangmaterialer.dk</a>.
+                </p>
+                <p>
+                  For at g&oslash;re det s&aring; overskueligt som muligt er alle priser p&aring; bigbags her p&aring; siden inkl. gratis levering, s&aring; du slipper for u&oslash;nskede till&aelig;g, n&aring;r du kommer til betaling.
+                </p>
+
+                <h3 className="font-display font-bold text-gray-900 text-lg mt-8 mb-2">
+                  Egen produktion af topdressing og muld
+                </h3>
+                <p>
+                  Vores topdressing- og plantemuldsprodukter produceres af K&aelig;rvang Materialer og leveres over hele landet til private, anl&aelig;gsgartnere, entrepren&oslash;rer, kommuner m.m. At vi selv producerer og ops&aelig;kker de forskellige haveprodukter betyder, at vi springer flere mellemled over og derved kan tilbyde nogle af landets billigste priser p&aring; sand, grus, granitsk&aelig;rver, flis, muld, spagnum, topdressing m.m., direkte leveret i bigbags til dig som kunde.
+                </p>
+
+                <h3 className="font-display font-bold text-gray-900 text-lg mt-8 mb-2">
+                  Direkte tiplevering af grus og granit
+                </h3>
+                <p>
+                  Fra vores lagre i Nordjylland tilbyder vi direkte tiplevering af grus og granit. Vi r&aring;der over forskellige tipbiler og en kranbil, som laster lige fra 15 til 39 tons pr. l&aelig;s. Tiplevering henvender sig til de st&oslash;rre leverancer, og priser afh&aelig;nger af m&aelig;ngde og leveringssted. Kontakt os gerne for tilbud p&aring; dit projekt.
+                </p>
+
+                <h3 className="font-display font-bold text-gray-900 text-lg mt-8 mb-2">
+                  Skovl selv / hent selv
+                </h3>
+                <p>
+                  Bor du i n&aelig;rheden af Gruslevering.dk &ndash; K&aelig;rvang Materialer &ndash; som er beliggende i 9382 Tylstrup, 15 km nord for Aalborg, er du velkommen til selv at afhente grus, sand, jord, granitsk&aelig;rver, topdressing mm. Vi tilbyder gratis l&aelig;sning, eller du kan benytte vores skovl selv-koncept. Pladsen er bemandet:
+                </p>
+                <ul className="list-none space-y-1 pl-0">
+                  <li><strong>Hverdage:</strong> kl. 8.00&ndash;16.00</li>
+                  <li><strong>H&oslash;js&aelig;son</strong> (for&aring;r og sommer): l&oslash;rdag og s&oslash;ndag kl. 9.00&ndash;14.00</li>
+                  <li><strong>Lavs&aelig;son</strong> (efter&aring;r og vinter): l&oslash;rdag kl. 9.00&ndash;14.00</li>
+                </ul>
+                <p>Afhentning uden for &aring;bningstid kan ske efter aftale p&aring; telefon.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
 
       <Footer />
     </div>
