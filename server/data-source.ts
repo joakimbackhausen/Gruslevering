@@ -5,7 +5,7 @@
 
 import { eq, asc, and, sql } from "drizzle-orm";
 import { db } from "./db";
-import { wcGet, wcPost } from "./woocommerce";
+import { wcGet, wcPost, storeApiCheckout } from "./woocommerce";
 import {
   products as productsTable,
   categories as categoriesTable,
@@ -383,89 +383,58 @@ export async function createOrder(
   const [firstName, ...lastParts] = input.customerName.split(" ");
   const lastName = lastParts.join(" ") || firstName;
 
-  // Build line items — ensure we use WC product IDs, not PostgreSQL IDs
-  const lineItems = input.lines.map((line) => {
-    const wcProdId = line.wcProductId || 0;
-    if (!wcProdId) {
+  // Validate WC product IDs
+  for (const line of input.lines) {
+    if (!line.wcProductId) {
       console.warn(`[order] Line item "${line.title}" has no wcProductId! productId=${line.productId}`);
     }
-    const item: Record<string, unknown> = {
-      product_id: wcProdId,
-      quantity: line.qty,
-    };
-    if (line.wcVariationId) {
-      item.variation_id = line.wcVariationId;
-    }
-    return item;
-  });
-
-  // Validate that all line items have valid WC product IDs
-  const invalidLines = lineItems.filter((li) => !li.product_id);
-  if (invalidLines.length > 0) {
-    throw new Error(`Kan ikke oprette ordre: ${invalidLines.length} produkt(er) mangler WooCommerce ID`);
   }
 
-  console.log("[order] Creating WC order with line_items:", JSON.stringify(lineItems));
+  const invalidCount = input.lines.filter((l) => !l.wcProductId).length;
+  if (invalidCount > 0) {
+    throw new Error(`Kan ikke oprette ordre: ${invalidCount} produkt(er) mangler WooCommerce ID`);
+  }
 
-  // Create order in WooCommerce
-  const wcOrder = await wcPost<WcOrderResponse>("/orders", {
-    payment_method: "worldline",
-    payment_method_title: "Worldline",
-    set_paid: false,
-    status: "pending",
-    billing: {
-      first_name: firstName,
-      last_name: lastName,
-      email: input.customerEmail,
-      phone: input.customerPhone,
-      address_1: input.customerAddress,
-      postcode: input.customerZip,
-      city: input.customerCity,
-      company: input.customerCompany || "",
-      country: "DK",
-    },
-    shipping: {
-      first_name: firstName,
-      last_name: lastName,
-      address_1: input.customerAddress,
-      postcode: input.customerZip,
-      city: input.customerCity,
-      company: input.customerCompany || "",
-      country: "DK",
-    },
-    line_items: lineItems,
-    shipping_lines: input.shippingRateId
-      ? [
-          {
-            method_id: input.shippingRateId.split(":")[0] || input.shippingRateId,
-            method_title: input.shippingMethodTitle || input.deliveryMethod,
-            total: input.shippingTotal || "0",
-            instance_id: input.shippingRateId.split(":")[1] || undefined,
-          },
-        ]
-      : [],
-    customer_note: input.notes || "",
-    // Include pickup point info as order meta if selected
-    meta_data: input.pickupPointId
-      ? [
-          { key: "_pickup_point_id", value: input.pickupPointId },
-          { key: "_pickup_point_name", value: input.pickupPointName || "" },
-          { key: "_pickup_point_address", value: input.pickupPointAddress || "" },
-          { key: "_shipmondo_service_point", value: input.pickupPointId },
-        ]
-      : [],
+  // Build cart items for Store API
+  const cartItems = input.lines.map((line) => ({
+    wcProductId: line.wcProductId!,
+    wcVariationId: line.wcVariationId,
+    quantity: line.qty,
+  }));
+
+  const addressData = {
+    first_name: firstName,
+    last_name: lastName,
+    email: input.customerEmail,
+    phone: input.customerPhone,
+    address_1: input.customerAddress,
+    postcode: input.customerZip,
+    city: input.customerCity,
+    company: input.customerCompany || "",
+    country: "DK",
+  };
+
+  console.log(`[order] Creating order via Store API checkout (${cartItems.length} items, shipping: ${input.shippingRateId || 'none'})`);
+
+  // Use Store API checkout — creates order AND processes payment in one step
+  // Returns the direct Worldline payment gateway redirect URL
+  const result = await storeApiCheckout({
+    items: cartItems,
+    billing: addressData,
+    shipping: addressData,
+    shippingRateId: input.shippingRateId,
+    paymentMethod: "worldline",
+    customerNote: input.notes || "",
   });
 
-  console.log(`[order] WC order created: #${wcOrder.number} (ID: ${wcOrder.id}), payment_url: ${wcOrder.payment_url ? 'yes' : 'none'}`);
-
   const subtotal = input.lines.reduce((sum, line) => sum + line.unitPrice * line.qty, 0);
-  const total = parseFloat(wcOrder.total) || subtotal;
+  const total = parseInt(result.total, 10) / 100 || subtotal; // Store API total is in øre
 
   // Save a local copy in PostgreSQL
   await db.insert(ordersTable).values({
-    orderNumber: String(wcOrder.number),
-    wcOrderId: wcOrder.id,
-    paymentUrl: wcOrder.payment_url || "",
+    orderNumber: result.orderNumber,
+    wcOrderId: result.orderId,
+    paymentUrl: result.paymentRedirectUrl || "",
     customerName: input.customerName,
     customerEmail: input.customerEmail,
     customerPhone: input.customerPhone,
@@ -484,11 +453,27 @@ export async function createOrder(
     discountCode: input.discountCode || "",
   });
 
+  // If we have a pickup point, update the order meta via REST API v3
+  if (input.pickupPointId) {
+    try {
+      await wcPost(`/orders/${result.orderId}`, {
+        meta_data: [
+          { key: "_pickup_point_id", value: input.pickupPointId },
+          { key: "_pickup_point_name", value: input.pickupPointName || "" },
+          { key: "_pickup_point_address", value: input.pickupPointAddress || "" },
+          { key: "_shipmondo_service_point", value: input.pickupPointId },
+        ],
+      });
+    } catch (err) {
+      console.warn("[order] Failed to save pickup point meta:", err);
+    }
+  }
+
   return {
-    orderId: wcOrder.id,
-    orderNumber: String(wcOrder.number),
+    orderId: result.orderId,
+    orderNumber: result.orderNumber,
     total,
-    paymentUrl: wcOrder.payment_url || "",
+    paymentUrl: result.paymentRedirectUrl || "",
   };
 }
 

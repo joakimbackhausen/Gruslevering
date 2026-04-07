@@ -286,3 +286,188 @@ export async function calculateShippingRates(
 
   return cart.shipping_rates || [];
 }
+
+// ── Store API Checkout (creates order + processes payment in one go) ──
+
+export interface CheckoutInput {
+  items: CartItem[];
+  billing: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    address_1: string;
+    postcode: string;
+    city: string;
+    company?: string;
+    country: string;
+  };
+  shipping: {
+    first_name: string;
+    last_name: string;
+    address_1: string;
+    postcode: string;
+    city: string;
+    company?: string;
+    country: string;
+  };
+  shippingRateId?: string;
+  paymentMethod: string;
+  customerNote?: string;
+  extensions?: Record<string, unknown>;
+}
+
+export interface CheckoutResult {
+  orderId: number;
+  orderNumber: string;
+  status: string;
+  paymentRedirectUrl: string;
+  total: string;
+}
+
+/**
+ * Full headless checkout via WC Store API.
+ * Creates a cart session, adds items, sets addresses, selects shipping,
+ * and calls /checkout which processes payment and returns the gateway redirect URL.
+ */
+export async function storeApiCheckout(input: CheckoutInput): Promise<CheckoutResult> {
+  const cartToken = crypto.randomUUID();
+  let cookies = "";
+
+  console.log(`[store-api-checkout] Starting checkout for ${input.items.length} items`);
+
+  // 1. Initialize cart session
+  const initRes = await fetch(`${STORE_API_BASE}/cart`, {
+    headers: { "Cart-Token": cartToken },
+  });
+  const nonce = initRes.headers.get("nonce") || "";
+  cookies = collectCookies(initRes, cookies);
+
+  if (!nonce) {
+    throw new Error("Could not obtain Store API nonce");
+  }
+
+  const makeHeaders = (): Record<string, string> => ({
+    "Content-Type": "application/json",
+    "Cart-Token": cartToken,
+    "Nonce": nonce,
+    ...(cookies ? { "Cookie": cookies } : {}),
+  });
+
+  // 2. Add items to cart
+  let addedCount = 0;
+  for (const item of input.items) {
+    const productId = item.wcVariationId || item.wcProductId;
+    const addRes = await fetch(`${STORE_API_BASE}/cart/add-item`, {
+      method: "POST",
+      headers: makeHeaders(),
+      body: JSON.stringify({ id: productId, quantity: item.quantity }),
+    });
+    cookies = collectCookies(addRes, cookies);
+
+    if (!addRes.ok) {
+      const text = await addRes.text().catch(() => "");
+      console.warn(`[store-api-checkout] Failed to add item ${productId}: ${addRes.status} ${text.slice(0, 200)}`);
+    } else {
+      addedCount++;
+    }
+  }
+
+  if (addedCount === 0) {
+    throw new Error("Ingen produkter kunne tilføjes til kurven");
+  }
+
+  // 3. Update customer billing + shipping address
+  const updateRes = await fetch(`${STORE_API_BASE}/cart/update-customer`, {
+    method: "POST",
+    headers: makeHeaders(),
+    body: JSON.stringify({
+      billing_address: input.billing,
+      shipping_address: input.shipping,
+    }),
+  });
+  cookies = collectCookies(updateRes, cookies);
+
+  if (!updateRes.ok) {
+    const text = await updateRes.text().catch(() => "");
+    console.error(`[store-api-checkout] update-customer failed: ${updateRes.status} ${text.slice(0, 300)}`);
+    throw new Error("Kunne ikke opdatere kundeoplysninger");
+  }
+
+  // 4. Select shipping rate if provided
+  if (input.shippingRateId) {
+    const selectRes = await fetch(`${STORE_API_BASE}/cart/select-shipping-rate`, {
+      method: "POST",
+      headers: makeHeaders(),
+      body: JSON.stringify({
+        package_id: 0,
+        rate_id: input.shippingRateId,
+      }),
+    });
+    cookies = collectCookies(selectRes, cookies);
+
+    if (!selectRes.ok) {
+      const text = await selectRes.text().catch(() => "");
+      console.warn(`[store-api-checkout] select-shipping-rate failed: ${selectRes.status} ${text.slice(0, 200)}`);
+      // Non-fatal — continue with default shipping
+    }
+  }
+
+  // 5. POST /checkout — creates order + processes payment
+  console.log(`[store-api-checkout] Submitting checkout with payment_method=${input.paymentMethod}`);
+
+  const checkoutBody: Record<string, unknown> = {
+    billing_address: input.billing,
+    shipping_address: input.shipping,
+    payment_method: input.paymentMethod,
+    payment_data: [],
+    customer_note: input.customerNote || "",
+  };
+
+  // Add extensions (e.g. pickup point data)
+  if (input.extensions) {
+    checkoutBody.extensions = input.extensions;
+  }
+
+  const checkoutRes = await fetch(`${STORE_API_BASE}/checkout`, {
+    method: "POST",
+    headers: makeHeaders(),
+    body: JSON.stringify(checkoutBody),
+  });
+  cookies = collectCookies(checkoutRes, cookies);
+
+  const checkoutText = await checkoutRes.text();
+
+  if (!checkoutRes.ok) {
+    console.error(`[store-api-checkout] Checkout failed: ${checkoutRes.status} ${checkoutText.slice(0, 500)}`);
+    throw new Error(`Checkout fejlede: ${checkoutText.slice(0, 200)}`);
+  }
+
+  const result = JSON.parse(checkoutText) as {
+    order_id: number;
+    order_number?: string;
+    status: string;
+    order_key?: string;
+    payment_result?: {
+      payment_status: string;
+      payment_details: { key: string; value: string }[];
+      redirect_url: string;
+    };
+    totals?: { total_price: string };
+    billing_address?: { email: string };
+  };
+
+  const redirectUrl = result.payment_result?.redirect_url || "";
+  const orderNumber = result.order_number || String(result.order_id);
+  const totalPrice = result.totals?.total_price || "0";
+
+  console.log(`[store-api-checkout] Order #${orderNumber} created (ID: ${result.order_id}), status: ${result.status}, redirect: ${redirectUrl ? 'yes' : 'none'}`);
+
+  return {
+    orderId: result.order_id,
+    orderNumber,
+    status: result.status,
+    paymentRedirectUrl: redirectUrl,
+    total: totalPrice,
+  };
+}
