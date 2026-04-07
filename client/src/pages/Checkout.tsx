@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useLocation } from 'wouter';
+import { Link, useLocation, useSearch } from 'wouter';
 import { useCart, getEffectivePrice } from '@/contexts/CartContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -91,6 +91,7 @@ const stepLabels = [
 
 export default function Checkout() {
   const [, navigate] = useLocation();
+  const searchString = useSearch();
   const { items, updateQuantity, removeItem, totalPrice } = useCart();
   const [step, setStep] = useState(1);
   const [customer, setCustomer] = useState<CustomerForm>(emptyCustomer);
@@ -108,6 +109,11 @@ export default function Checkout() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
+
+  // Handle cancelled payment redirect
+  const cancelledParams = new URLSearchParams(searchString);
+  const wasCancelled = cancelledParams.get('cancelled') === 'true';
+  const cancelledOrderId = cancelledParams.get('order_id');
 
   function getItemKey(item: { id: string; variant?: string }) {
     return item.variant ? `${item.id}-${item.variant}` : item.id;
@@ -478,6 +484,22 @@ export default function Checkout() {
               </div>
             ))}
           </div>
+
+          {/* Cancelled payment notice */}
+          {wasCancelled && (
+            <div className="mb-6 p-5 rounded-xl bg-amber-50 border border-amber-200">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[15px] font-semibold text-amber-800">Betaling annulleret</p>
+                  <p className="text-[14px] text-amber-700 mt-1">
+                    Din betaling blev annulleret.{cancelledOrderId ? ` (Ordre #${cancelledOrderId})` : ''}{' '}
+                    Du kan forts&aelig;tte med at handle eller pr&oslash;ve igen.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className={`${step === 1 ? 'lg:col-span-12' : 'lg:col-span-7'}`}>
