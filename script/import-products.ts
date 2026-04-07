@@ -82,9 +82,29 @@ interface WcProduct {
 
 async function fetchCategories(): Promise<WcCategory[]> {
   console.log("Fetching categories from WooCommerce...");
-  const cats = await wcGet<WcCategory[]>("/products/categories", { per_page: "100" });
-  console.log(`  Found ${cats.length} categories`);
-  return cats;
+  const all: WcCategory[] = [];
+  let page = 1;
+  const perPage = 100;
+
+  while (true) {
+    try {
+      const batch = await wcGet<WcCategory[]>("/products/categories", {
+        per_page: String(perPage),
+        page: String(page),
+      });
+      if (batch.length === 0) break;
+      all.push(...batch);
+      console.log(`  Page ${page}: ${batch.length} categories (total: ${all.length})`);
+      if (batch.length < perPage) break; // last page
+      page++;
+    } catch {
+      // WC returns 400 for out-of-range pages — we're done
+      break;
+    }
+  }
+
+  console.log(`  Found ${all.length} categories total`);
+  return all;
 }
 
 // ---------------------------------------------------------------------------
@@ -166,14 +186,25 @@ async function fetchAllProducts(): Promise<WcProduct[]> {
   console.log("\nFetching products from WooCommerce...");
   const all: WcProduct[] = [];
   let page = 1;
+  const perPage = 100;
 
   while (true) {
-    const batch = await wcGet<WcProduct[]>("/products", { per_page: "100", page: String(page) });
-    if (batch.length === 0) break;
-    all.push(...batch);
-    console.log(`  Page ${page}: ${batch.length} products (total: ${all.length})`);
-    page++;
-    await delay(300);
+    try {
+      const batch = await wcGet<WcProduct[]>("/products", {
+        per_page: String(perPage),
+        page: String(page),
+        status: "publish",
+      });
+      if (batch.length === 0) break;
+      all.push(...batch);
+      console.log(`  Page ${page}: ${batch.length} products (total: ${all.length})`);
+      if (batch.length < perPage) break; // last page
+      page++;
+      await delay(300);
+    } catch {
+      // WC returns 400 for out-of-range pages — we're done
+      break;
+    }
   }
 
   console.log(`  Total products fetched: ${all.length}`);
@@ -187,16 +218,28 @@ async function fetchAllProducts(): Promise<WcProduct[]> {
 async function fetchVariationDetails(
   productId: number
 ): Promise<WcVariation[]> {
+  const all: WcVariation[] = [];
+  let page = 1;
+  const perPage = 100;
+
   try {
-    const variations = await wcGet<WcVariation[]>(
-      `/products/${productId}/variations`,
-      { per_page: "100" }
-    );
-    return variations;
+    while (true) {
+      const batch = await wcGet<WcVariation[]>(
+        `/products/${productId}/variations`,
+        { per_page: String(perPage), page: String(page) }
+      );
+      if (batch.length === 0) break;
+      all.push(...batch);
+      if (batch.length < perPage) break;
+      page++;
+    }
   } catch (err: any) {
-    console.warn(`    [WARN] Could not fetch variations for product ${productId}: ${err.message}`);
-    return [];
+    // If we already got some variations, return them; otherwise warn
+    if (all.length === 0) {
+      console.warn(`    [WARN] Could not fetch variations for product ${productId}: ${err.message}`);
+    }
   }
+  return all;
 }
 
 // ---------------------------------------------------------------------------
@@ -228,7 +271,8 @@ function stripHtml(html: string): string {
 function buildProductPayload(
   product: WcProduct,
   variationDetails: WcVariation[],
-  catMap: Map<number, number>
+  catMap: Map<number, number>,
+  wcParentCatIds: Set<number>
 ): Record<string, any> {
   const basePrice = parseFloat(product.price) || 0;
   const regularPrice = parseFloat(product.regular_price) || 0;
@@ -257,14 +301,22 @@ function buildProductPayload(
     payload.images = product.images.map((img) => img.src);
   }
 
-  // Category (use the first matching category's PG ID)
+  // Category — prefer child (most specific) categories over parents
   if (product.categories.length > 0) {
+    let fallbackId: number | null = null;
     for (const cat of product.categories) {
       const pgId = catMap.get(cat.id);
       if (pgId) {
-        payload.categoryId = pgId;
-        break;
+        if (!wcParentCatIds.has(cat.id)) {
+          payload.categoryId = pgId;
+          break; // Found a child category, use it
+        }
+        if (fallbackId === null) fallbackId = pgId;
       }
+    }
+    // If no child category was found, use parent as fallback
+    if (!payload.categoryId && fallbackId) {
+      payload.categoryId = fallbackId;
     }
   }
 
@@ -330,7 +382,8 @@ function buildProductPayload(
 
 async function createProducts(
   wcProducts: WcProduct[],
-  catMap: Map<number, number>
+  catMap: Map<number, number>,
+  wcParentCatIds: Set<number>
 ): Promise<void> {
   console.log(`\nCreating ${wcProducts.length} products in PostgreSQL...`);
 
@@ -348,7 +401,7 @@ async function createProducts(
         variationDetails = await fetchVariationDetails(product.id);
       }
 
-      const payload = buildProductPayload(product, variationDetails, catMap);
+      const payload = buildProductPayload(product, variationDetails, catMap, wcParentCatIds);
 
       if (DRY_RUN) {
         console.log(`  [DRY RUN] INSERT product`, JSON.stringify(payload).slice(0, 200));
@@ -405,11 +458,16 @@ async function main() {
   // 2. Create categories in DB
   const catMap = await createCategories(wcCategories);
 
+  // Build set of root/parent category IDs for smarter category assignment
+  const wcParentCatIds = new Set(
+    wcCategories.filter((c) => c.parent === 0).map((c) => c.id)
+  );
+
   // 3. Fetch all products
   const wcProducts = await fetchAllProducts();
 
   // 4-6. Create products (variation fetching happens per product)
-  await createProducts(wcProducts, catMap);
+  await createProducts(wcProducts, catMap, wcParentCatIds);
 
   // 7. Seed admin user
   if (!DRY_RUN) {

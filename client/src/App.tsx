@@ -15,6 +15,7 @@ const Checkout = lazy(() => import("@/pages/Checkout"));
 const OrderConfirmation = lazy(() => import("@/pages/OrderConfirmation"));
 const VolumeCalculator = lazy(() => import("@/pages/VolumeCalculator"));
 const Delivery = lazy(() => import("@/pages/Delivery"));
+const Article = lazy(() => import("@/pages/Article"));
 
 // Lazy-load toast system (rarely needed on first render)
 const Toaster = lazy(() => import("@/components/ui/toaster").then(m => ({ default: m.Toaster })));
@@ -32,6 +33,7 @@ function Router() {
         <Route path="/levering" component={Delivery} />
         <Route path="/om-os" component={About} />
         <Route path="/kontakt" component={Contact} />
+        <Route path="/guide/:slug" component={Article} />
         <Route path="/checkout" component={Checkout} />
         <Route path="/ordre-bekraeftelse" component={OrderConfirmation} />
         <Route component={Home} />

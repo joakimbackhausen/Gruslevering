@@ -176,6 +176,174 @@ export async function registerRoutes(
     }
   });
 
+  /**
+   * Clean up WordPress HTML so it renders nicely on the frontend.
+   * - Converts <div> wrappers to <p> tags
+   * - Converts text-bullet lines (•) into proper <ul><li> lists
+   * - Converts unicode separator lines (⸻ / ——) into <hr>
+   * - Removes empty <div> and <p> tags
+   * - Converts standalone <strong> paragraphs into <h3> when they look like headings
+   */
+  function cleanWpHtml(html: string): string {
+    let out = html;
+
+    // 1. Convert bullet lines: <div>•text</div> → collect into <ul><li>
+    out = out.replace(
+      /(?:<div>\s*[•·–-]\s*(.*?)\s*<\/div>\s*)+/gi,
+      (match) => {
+        const items = [...match.matchAll(/<div>\s*[•·–-]\s*(.*?)\s*<\/div>/gi)];
+        if (items.length === 0) return match;
+        const lis = items.map((m) => `<li>${m[1].trim()}</li>`).join('\n');
+        return `<ul>\n${lis}\n</ul>`;
+      }
+    );
+
+    // 2. Convert separator lines to <hr>
+    out = out.replace(/<div>\s*[⸻—–]{1,}\s*<\/div>/g, '<hr>');
+    out = out.replace(/<p>\s*[⸻—–]{1,}\s*<\/p>/g, '<hr>');
+
+    // 3. Remove empty <div></div> tags
+    out = out.replace(/<div>\s*<\/div>/g, '');
+
+    // 4. Convert remaining <div>content</div> to <p>content</p>
+    // but skip divs that contain block-level elements
+    out = out.replace(
+      /<div>((?:(?!<(?:div|h[1-6]|ul|ol|table|blockquote|figure|hr)[ >])[\s\S])*?)<\/div>/gi,
+      (_, content) => {
+        const trimmed = content.trim();
+        if (!trimmed) return '';
+        return `<p>${trimmed}</p>`;
+      }
+    );
+
+    // 5. Convert standalone <p><strong>Text</strong></p> to <h3> if it looks like a heading
+    // (strong is the only child, text is short, no period at end)
+    out = out.replace(
+      /<p>\s*<strong>(.*?)<\/strong>\s*<\/p>/gi,
+      (match, text) => {
+        const clean = text.replace(/<[^>]*>/g, '').trim();
+        // If it's short (< 120 chars) and doesn't end with period → likely a heading
+        if (clean.length < 120 && !clean.endsWith('.') && !clean.endsWith(':')) {
+          return `<h3>${text}</h3>`;
+        }
+        return match;
+      }
+    );
+
+    // 6. Remove <strong> wrapping inside h2 (WP often does <h2><strong>...</strong></h2>)
+    out = out.replace(
+      /<h2>\s*<strong>(.*?)<\/strong>\s*<\/h2>/gi,
+      '<h2>$1</h2>'
+    );
+
+    // 7. Remove empty <p></p>
+    out = out.replace(/<p>\s*<\/p>/g, '');
+
+    return out.trim();
+  }
+
+  // GET /api/articles/:slug — fetch WordPress blog post by slug (cached 1 hour)
+  const articleCache = new Map<string, { data: any; ts: number }>();
+  const ARTICLE_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+  app.get('/api/articles/:slug', async (req, res) => {
+    const { slug } = req.params;
+    try {
+      // Check cache
+      const cached = articleCache.get(slug);
+      if (cached && Date.now() - cached.ts < ARTICLE_CACHE_TTL) {
+        return res.json(cached.data);
+      }
+
+      const WC_URL = process.env.WC_URL || 'https://gruslevering.dk';
+      const wpRes = await fetch(
+        `${WC_URL}/wp-json/wp/v2/posts?slug=${encodeURIComponent(slug)}&_fields=id,slug,title,content,excerpt,featured_media,date`
+      );
+      if (!wpRes.ok) {
+        return res.status(502).json({ error: 'Failed to fetch article from WordPress' });
+      }
+      const posts = await wpRes.json() as any[];
+      if (posts.length === 0) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+
+      const post = posts[0];
+
+      // Fetch featured image if available
+      let featuredImage = '';
+      if (post.featured_media) {
+        try {
+          const mediaRes = await fetch(
+            `${WC_URL}/wp-json/wp/v2/media/${post.featured_media}?_fields=source_url`
+          );
+          if (mediaRes.ok) {
+            const media = await mediaRes.json() as any;
+            featuredImage = media.source_url || '';
+          }
+        } catch { /* ignore */ }
+      }
+
+      const article = {
+        id: post.id,
+        slug: post.slug,
+        title: post.title?.rendered || '',
+        content: cleanWpHtml(post.content?.rendered || ''),
+        excerpt: post.excerpt?.rendered || '',
+        featuredImage,
+        date: post.date,
+      };
+
+      articleCache.set(slug, { data: article, ts: Date.now() });
+      res.json(article);
+    } catch (err) {
+      console.error('Error fetching article:', err);
+      res.status(500).json({ error: 'Failed to fetch article' });
+    }
+  });
+
+  // GET /api/articles — list recent articles for haveguide
+  app.get('/api/articles', async (_req, res) => {
+    try {
+      const WC_URL = process.env.WC_URL || 'https://gruslevering.dk';
+      const wpRes = await fetch(
+        `${WC_URL}/wp-json/wp/v2/posts?per_page=12&_fields=id,slug,title,excerpt,featured_media,date`
+      );
+      if (!wpRes.ok) {
+        return res.status(502).json({ error: 'Failed to fetch articles from WordPress' });
+      }
+      const posts = await wpRes.json() as any[];
+
+      // Fetch featured images in parallel
+      const articles = await Promise.all(posts.map(async (post: any) => {
+        let featuredImage = '';
+        if (post.featured_media) {
+          try {
+            const mediaRes = await fetch(
+              `${WC_URL}/wp-json/wp/v2/media/${post.featured_media}?_fields=source_url`
+            );
+            if (mediaRes.ok) {
+              const media = await mediaRes.json() as any;
+              featuredImage = media.source_url || '';
+            }
+          } catch { /* ignore */ }
+        }
+        return {
+          id: post.id,
+          slug: post.slug,
+          title: post.title?.rendered || '',
+          excerpt: post.excerpt?.rendered || '',
+          featuredImage,
+          date: post.date,
+        };
+      }));
+
+      res.json(articles);
+    } catch (err) {
+      console.error('Error fetching articles:', err);
+      res.status(500).json({ error: 'Failed to fetch articles' });
+    }
+  });
+
   // GET /api/pages/:slug — fetch page content from Strapi
   app.get('/api/pages/:slug', async (req, res) => {
     try {

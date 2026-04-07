@@ -576,23 +576,62 @@ function parseWcPrice(priceStr: string): number {
 }
 
 /**
+ * Fetch ALL categories from WC REST API v3, handling pagination.
+ */
+async function fetchAllWcCategories(): Promise<WcCategory[]> {
+  const all: WcCategory[] = [];
+  let page = 1;
+  const perPage = 100;
+
+  while (true) {
+    console.log(`[wc-sync] Fetching categories (page ${page})...`);
+    try {
+      const batch = await wcGet<WcCategory[]>("/products/categories", {
+        per_page: String(perPage),
+        page: String(page),
+      });
+      if (batch.length === 0) break;
+      all.push(...batch);
+      if (batch.length < perPage) break; // last page
+      page++;
+    } catch {
+      // WC returns 400 for out-of-range pages — we're done
+      break;
+    }
+  }
+
+  console.log(`[wc-sync] Fetched ${all.length} categories total`);
+  return all;
+}
+
+/**
  * Fetch ALL products from WC REST API v3, handling pagination.
+ * Only fetches published products.
  */
 async function fetchAllWcProducts(): Promise<WcProduct[]> {
   const all: WcProduct[] = [];
   let page = 1;
+  const perPage = 100;
 
   while (true) {
     console.log(`[wc-sync] Syncing products (page ${page})...`);
-    const batch = await wcGet<WcProduct[]>("/products", {
-      per_page: "100",
-      page: String(page),
-    });
-    if (batch.length === 0) break;
-    all.push(...batch);
-    page++;
+    try {
+      const batch = await wcGet<WcProduct[]>("/products", {
+        per_page: String(perPage),
+        page: String(page),
+        status: "publish",
+      });
+      if (batch.length === 0) break;
+      all.push(...batch);
+      if (batch.length < perPage) break; // last page
+      page++;
+    } catch {
+      // WC returns 400 for out-of-range pages — we're done
+      break;
+    }
   }
 
+  console.log(`[wc-sync] Fetched ${all.length} products total`);
   return all;
 }
 
@@ -649,8 +688,8 @@ function buildVariantsFromWc(
 export async function syncFromWooCommerce(): Promise<void> {
   console.log("[wc-sync] Syncing categories...");
 
-  // ── 1. Fetch and upsert categories ──
-  const wcCats = await wcGet<WcCategory[]>("/products/categories", { per_page: "100" });
+  // ── 1. Fetch and upsert categories (paginated) ──
+  const wcCats = await fetchAllWcCategories();
 
   // Separate root and child categories, insert roots first so we can resolve parent PG IDs
   const roots = wcCats.filter((c) => c.parent === 0);
@@ -720,6 +759,9 @@ export async function syncFromWooCommerce(): Promise<void> {
   const wcProducts = await fetchAllWcProducts();
   let productCount = 0;
 
+  // Build set of root/parent category IDs for smarter category assignment
+  const wcParentIds = new Set(wcCats.filter((c) => c.parent === 0).map((c) => c.id));
+
   for (const product of wcProducts) {
     const regularPrice = parseWcPrice(product.regular_price);
     const effectivePrice = parseWcPrice(product.price);
@@ -727,27 +769,45 @@ export async function syncFromWooCommerce(): Promise<void> {
 
     const basePrice = regularPrice || effectivePrice;
 
-    // Fetch variation details for variable products
+    // Fetch variation details for variable products (paginated)
     let variants: VariantGroup[] | null = null;
     if (product.type === "variable" && product.variations.length > 0) {
       try {
-        const variationDetails = await wcGet<WcVariation[]>(
-          `/products/${product.id}/variations`,
-          { per_page: "100" }
-        );
-        variants = buildVariantsFromWc(product, variationDetails, basePrice);
+        const allVariations: WcVariation[] = [];
+        let vPage = 1;
+        const vPerPage = 100;
+        while (true) {
+          const vBatch = await wcGet<WcVariation[]>(
+            `/products/${product.id}/variations`,
+            { per_page: String(vPerPage), page: String(vPage) }
+          );
+          if (vBatch.length === 0) break;
+          allVariations.push(...vBatch);
+          if (vBatch.length < vPerPage) break;
+          vPage++;
+        }
+        variants = buildVariantsFromWc(product, allVariations, basePrice);
       } catch (err: any) {
         console.warn(`[wc-sync] Could not fetch variations for product ${product.id}: ${err.message}`);
       }
     }
 
-    // Resolve category PG ID
+    // Resolve category PG ID — prefer child (most specific) categories over parents.
+    // WooCommerce products often belong to both parent and child categories;
+    // we want the most specific one since parent counts auto-sum children.
     let categoryId: number | null = null;
     for (const cat of product.categories) {
       const pgId = catMap.get(cat.id);
       if (pgId) {
-        categoryId = pgId;
-        break;
+        // Prefer child categories (non-root) over parent categories
+        if (!wcParentIds.has(cat.id)) {
+          categoryId = pgId;
+          break; // Found a child category, use it
+        }
+        // Fall back to parent if no child found
+        if (categoryId === null) {
+          categoryId = pgId;
+        }
       }
     }
 

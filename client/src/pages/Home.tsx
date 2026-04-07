@@ -104,25 +104,25 @@ const HAVEGUIDE_ARTICLES = [
   {
     title: 'Komplet guide til muld og jord',
     desc: 'Vælg den rigtige jord til dit haveprojekt',
-    href: 'https://gruslevering.dk/komplet-guide-til-muld-og-jord/',
+    href: '/guide/komplet-guide-til-muld-og-jord',
     image: 'https://gruslevering.dk/wp-content/uploads/2026/02/ChatGPT-Image-17.-feb.-2026-18.44.55-e1771493007832.png',
   },
   {
     title: 'Sådan etablerer du en ny græsplæne',
     desc: 'Trin for trin – 100% korrekt',
-    href: 'https://gruslevering.dk/saadan-etablerer-du-en-ny-graesplaene/',
+    href: '/guide/saadan-etablerer-du-en-ny-graesplaene',
     image: 'https://gruslevering.dk/wp-content/uploads/2026/02/ok-e1773057103439.png',
   },
   {
     title: 'Granitskærver – den komplette guide 2026',
     desc: 'Alt om valg, anvendelse og vedligeholdelse',
-    href: 'https://gruslevering.dk/granitskaerver-guide/',
+    href: '/guide/granitskaerver-guide',
     image: 'https://gruslevering.dk/wp-content/uploads/2025/11/graa-granit-18-25mm.jpg',
   },
   {
     title: 'Flis: Guide til bunddækkematerialer',
     desc: 'Valg, anvendelse og pleje',
-    href: 'https://gruslevering.dk/flis-pinjebark-bundaekke-daekbark-kakaoflis/',
+    href: '/guide/flis-pinjebark-bundaekke-daekbark-kakaoflis',
     image: 'https://gruslevering.dk/wp-content/uploads/2025/10/Pinjebark-20-40-pose-e1770390187304.png',
   },
 ];
@@ -426,10 +426,8 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
               {HAVEGUIDE_ARTICLES.map((article, i) => (
                 <Reveal key={article.title} delay={i * 80}>
-                  <a
+                  <Link
                     href={article.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100"
                   >
                     <div className="aspect-[16/10] overflow-hidden">
@@ -447,7 +445,7 @@ export default function Home() {
                       </h3>
                       <p className="text-xs text-gray-500 mt-1 line-clamp-1">{article.desc}</p>
                     </div>
-                  </a>
+                  </Link>
                 </Reveal>
               ))}
             </div>
