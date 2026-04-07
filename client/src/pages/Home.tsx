@@ -56,27 +56,27 @@ const CATEGORY_TILES = [
   {
     label: 'Granitskærver',
     href: '/shop/granitskaerver-sten-pyntesten/granitskaerver',
-    image: 'https://gruslevering.dk/wp-content/uploads/2018/03/sortgranit.png',
+    image: 'https://gruslevering.dk/wp-content/uploads/2019/11/Stort-udvalg-af-grus-sand-og-granitsk%C3%A6rver-2.png',
   },
   {
-    label: 'Muld og\ntopdressing',
+    label: 'Muld og jord',
     href: '/shop/muldjord',
-    image: 'https://gruslevering.dk/wp-content/uploads/2019/11/Gartnermuld-HG.png',
+    image: 'https://gruslevering.dk/wp-content/uploads/2026/02/ChatGPT-Image-26.-feb.-2026-22.48.35-1024x683.png',
   },
   {
-    label: 'Pyntesten',
+    label: 'Plante kasser',
     href: '/shop/granitskaerver-sten-pyntesten/pyntesten-kategori',
-    image: 'https://gruslevering.dk/wp-content/uploads/2018/08/VM541110-pigsten-150-300-bigbag-a-1000-kg.jpg',
+    image: 'https://gruslevering.dk/wp-content/uploads/2019/11/Hvide-noeddesten-3264-768x1024.jpeg',
   },
   {
-    label: 'Pinjebark\n& bunddække',
+    label: 'Dækbark',
     href: '/shop/traeflis',
-    image: 'https://gruslevering.dk/wp-content/uploads/2021/02/bigbag-pinjebark-ny.jpg',
+    image: 'https://gruslevering.dk/wp-content/uploads/2023/09/AA9AC17E-D91E-429A-8025-D01EBA655143-e1773662030197-773x1024.jpeg',
   },
   {
-    label: 'Højbede &\nplantekasser',
+    label: 'Plantekasser',
     href: '/shop/hus-og-have/hoejbede-og-plantekasser',
-    image: 'https://gruslevering.dk/wp-content/uploads/2026/02/hoejbede-braendt.png',
+    image: 'https://gruslevering.dk/wp-content/uploads/2022/07/44606_BM1.jpeg',
     wide: true,
   },
 ];
@@ -199,7 +199,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══ CATEGORY TILES (5 tiles matching nytestforside layout) ═══ */}
+        {/* ═══ CATEGORY TILES (matching gruslevering.dk/nytestforside exactly) ═══ */}
         <section className="px-4 sm:px-6 lg:px-8 mt-4">
           <div className="max-w-[1400px] mx-auto">
             {/* Top row: 4 tiles */}
@@ -208,18 +208,18 @@ export default function Home() {
                 <Reveal key={tile.label} delay={i * 60}>
                   <Link
                     href={tile.href}
-                    className="group relative aspect-[3/4] sm:aspect-[4/5] rounded-2xl overflow-hidden block shadow-md hover:shadow-xl transition-all duration-300"
+                    className="group relative aspect-[3/4] sm:aspect-[4/5] rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300"
                   >
                     <SmartImage
                       src={tile.image}
-                      alt={tile.label.replace('\n', ' ')}
-                      className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-500"
-                      width={350}
+                      alt={tile.label}
+                      className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                      width={400}
                       sizes="(max-width: 640px) 45vw, 25vw"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                     <div className="absolute top-0 left-0 right-0 p-4 lg:p-5">
-                      <p className="text-white font-extrabold text-lg sm:text-xl lg:text-2xl leading-tight drop-shadow-lg whitespace-pre-line">
+                      <p className="text-gray-900 font-extrabold text-base sm:text-lg lg:text-xl leading-tight uppercase tracking-wide"
+                         style={{ textShadow: '0 1px 3px rgba(255,255,255,0.6)' }}>
                         {tile.label}
                       </p>
                     </div>
@@ -227,61 +227,63 @@ export default function Home() {
                 </Reveal>
               ))}
             </div>
-            {/* Bottom row: wide tile */}
+            {/* Bottom row: wide tile spanning 3 of 4 columns (centered) */}
             {CATEGORY_TILES.filter((t) => t.wide).map((tile) => (
               <Reveal key={tile.label} delay={250}>
-                <Link
-                  href={tile.href}
-                  className="group relative mt-3 lg:mt-4 rounded-2xl overflow-hidden block shadow-md hover:shadow-xl transition-all duration-300 aspect-[16/6] sm:aspect-[16/5] lg:aspect-[16/4]"
-                >
-                  <SmartImage
-                    src={tile.image}
-                    alt={tile.label.replace('\n', ' ')}
-                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                    width={800}
-                    sizes="(max-width: 640px) 95vw, 1400px"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
-                  <div className="absolute top-0 left-0 p-5 lg:p-8">
-                    <p className="text-white font-extrabold text-xl sm:text-2xl lg:text-3xl leading-tight drop-shadow-lg whitespace-pre-line">
-                      {tile.label}
-                    </p>
-                  </div>
-                </Link>
+                <div className="mt-3 lg:mt-4 lg:px-[12.5%]">
+                  <Link
+                    href={tile.href}
+                    className="group relative rounded-lg overflow-hidden block hover:shadow-lg transition-all duration-300 aspect-[16/7] sm:aspect-[16/6]"
+                  >
+                    <SmartImage
+                      src={tile.image}
+                      alt={tile.label}
+                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                      width={900}
+                      sizes="(max-width: 640px) 95vw, 75vw"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <p className="text-white font-extrabold text-xl sm:text-2xl lg:text-3xl uppercase tracking-wide drop-shadow-lg">
+                        {tile.label}
+                      </p>
+                    </div>
+                  </Link>
+                </div>
               </Reveal>
             ))}
           </div>
         </section>
 
-        {/* ═══ HVORFOR KUNDERNE VÆLGER OS ═══ */}
-        <section className="py-10 lg:py-14">
-          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        {/* ═══ HVORFOR KUNDERNE VÆLGER OS (light green card like nytestforside) ═══ */}
+        <section className="py-10 lg:py-14 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1400px] mx-auto">
             <Reveal>
-              <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] mb-6">
-                Hvorfor kunderne v&aelig;lger os
-              </h2>
-            </Reveal>
+              <div className="rounded-2xl py-10 px-6 sm:px-10 lg:px-14" style={{ backgroundColor: '#e8f0e4' }}>
+                <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] text-center mb-8">
+                  Hvorfor kunderne v&aelig;lger os
+                </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-5">
-              {[
-                { icon: '🚚', text: 'Fri levering i hele Danmark' },
-                { icon: '🔨', text: 'Kun kvalitetsmaterialer' },
-                { icon: '🇩🇰', text: 'Dansk familieejet siden 2008' },
-                { icon: '🚛', text: 'Express \u2013 Kran eller mobiltruck' },
-                { icon: '⭐', text: '4.8 \u2605 Trustpilot' },
-                { icon: '💰', text: 'Prisgaranti p\u00e5 mange produkter' },
-              ].map((usp) => (
-                <Reveal key={usp.text}>
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50">
-                    <span className="text-xl shrink-0 mt-0.5">{usp.icon}</span>
-                    <span className="text-sm font-medium text-gray-800 leading-snug">{usp.text}</span>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 mt-4">
-              * 98% af ordre bliver leveret indenfor 48 timer.
-            </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-5 gap-x-8 max-w-4xl mx-auto">
+                  {[
+                    { icon: '🚚', text: 'Gratis levering i hele Danmark' },
+                    { icon: '🇩🇰', text: 'Dansk familieejet siden 2008' },
+                    { icon: '💰', text: 'Prisgaranti p\u00e5 mange produkter' },
+                    { icon: '🔨', text: 'Kun kvalitetsmaterialer' },
+                    { icon: '🚛', text: 'Express \u2013 Kran eller mobiltruck' },
+                    { icon: '⭐', text: '4.8 \u2605 Trustpilot' },
+                  ].map((usp) => (
+                    <div key={usp.text} className="flex items-center gap-2.5">
+                      <span className="text-lg shrink-0">{usp.icon}</span>
+                      <span className="text-sm sm:text-[15px] text-gray-800">{usp.text}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-xs text-gray-500 text-center mt-6">
+                  * 98% af ordre bliver leveret indenfor 48 timer.
+                </p>
+              </div>
+            </Reveal>
           </div>
         </section>
 
