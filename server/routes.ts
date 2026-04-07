@@ -107,6 +107,18 @@ export async function registerRoutes(
         return res.status(400).json({ error: 'Missing delivery method' });
       }
 
+      // Resolve WC product IDs from our cache if not provided by the frontend
+      const allProducts = await fetchAllProducts();
+      for (const line of input.lines) {
+        if (!line.wcProductId && line.productId) {
+          const product = allProducts.find((p) => p.id === line.productId || p.id === String(line.productId));
+          if (product?.wcId) {
+            line.wcProductId = product.wcId;
+            console.log(`[order] Resolved wcProductId ${product.wcId} for productId ${line.productId} (${product.title})`);
+          }
+        }
+      }
+
       const result = await createOrder(input);
       res.json({
         orderId: result.orderId,
@@ -114,9 +126,11 @@ export async function registerRoutes(
         total: result.total,
         paymentUrl: result.paymentUrl,
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating order:', err);
-      res.status(500).json({ error: 'Failed to create order' });
+      // Surface WC API error details for debugging
+      const errMsg = err?.message || 'Failed to create order';
+      res.status(500).json({ error: errMsg });
     }
   });
 
@@ -184,6 +198,94 @@ export async function registerRoutes(
     } catch (err) {
       console.error('Error calculating shipping:', err);
       res.status(500).json({ error: 'Failed to calculate shipping rates' });
+    }
+  });
+
+  // GET /api/pickup-points — find nearby pickup points for GLS/DAO via Shipmondo
+  app.get('/api/pickup-points', async (req, res) => {
+    try {
+      const { carrier, zip, country, address } = req.query as {
+        carrier?: string;
+        zip?: string;
+        country?: string;
+        address?: string;
+      };
+
+      if (!carrier || !zip) {
+        return res.status(400).json({ error: 'carrier and zip are required' });
+      }
+
+      // Map shipping rate names to Shipmondo carrier codes
+      const carrierLower = carrier.toLowerCase();
+      let carrierCode = '';
+      if (carrierLower.includes('gls')) {
+        carrierCode = 'gls';
+      } else if (carrierLower.includes('dao')) {
+        carrierCode = 'dao';
+      } else if (carrierLower.includes('postnord') || carrierLower.includes('post nord')) {
+        carrierCode = 'pdk';
+      } else if (carrierLower.includes('bring')) {
+        carrierCode = 'bring';
+      } else {
+        // Default to gls
+        carrierCode = 'gls';
+      }
+
+      const countryCode = (country || 'DK').toUpperCase();
+
+      // Use Shipmondo's public service point API
+      const params = new URLSearchParams({
+        carrier_code: carrierCode,
+        country_code: countryCode,
+        zipcode: zip,
+      });
+      if (address) {
+        params.set('address', address);
+      }
+
+      console.log(`[pickup] Fetching pickup points: carrier=${carrierCode}, zip=${zip}, country=${countryCode}`);
+
+      const apiUrl = `https://app.shipmondo.com/api/public/service_points?${params.toString()}`;
+      const response = await fetch(apiUrl, {
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        console.error(`[pickup] Shipmondo API error: ${response.status} ${text.slice(0, 300)}`);
+        // Fallback: try the alternative Shipmondo endpoint
+        const altUrl = `https://service-api.shipmondo.com/v2/pickup_points?carrier=${carrierCode}&country=${countryCode}&zip=${zip}${address ? `&address=${encodeURIComponent(address)}` : ''}`;
+        const altRes = await fetch(altUrl, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!altRes.ok) {
+          throw new Error(`Shipmondo API ${response.status}`);
+        }
+        const altData = await altRes.json();
+        return res.json({ points: Array.isArray(altData) ? altData.slice(0, 20) : [] });
+      }
+
+      const data = await response.json();
+      // Normalize the response
+      const points = (Array.isArray(data) ? data : data?.service_points || data?.pickup_points || [])
+        .slice(0, 20)
+        .map((p: any) => ({
+          id: p.id || p.service_point_id || p.number,
+          name: p.name || p.company_name || '',
+          address: p.address || p.address1 || p.visiting_address || '',
+          zipcode: p.zipcode || p.zip_code || p.zip || '',
+          city: p.city || '',
+          country: p.country || p.country_code || countryCode,
+          distance: p.distance || null,
+          openingHours: p.opening_hours || p.openingHours || null,
+          carrier: carrierCode,
+        }));
+
+      console.log(`[pickup] Found ${points.length} pickup points for ${carrierCode} in ${zip}`);
+      res.json({ points });
+    } catch (err: any) {
+      console.error('Error fetching pickup points:', err);
+      res.status(500).json({ error: 'Kunne ikke hente udleveringssteder' });
     }
   });
 

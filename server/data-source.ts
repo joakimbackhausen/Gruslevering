@@ -98,6 +98,9 @@ export interface CreateOrderInput {
   shippingRateId?: string;
   shippingMethodTitle?: string;
   shippingTotal?: string;
+  pickupPointId?: string;
+  pickupPointName?: string;
+  pickupPointAddress?: string;
   notes?: string;
   discountCode?: string;
 }
@@ -380,6 +383,30 @@ export async function createOrder(
   const [firstName, ...lastParts] = input.customerName.split(" ");
   const lastName = lastParts.join(" ") || firstName;
 
+  // Build line items — ensure we use WC product IDs, not PostgreSQL IDs
+  const lineItems = input.lines.map((line) => {
+    const wcProdId = line.wcProductId || 0;
+    if (!wcProdId) {
+      console.warn(`[order] Line item "${line.title}" has no wcProductId! productId=${line.productId}`);
+    }
+    const item: Record<string, unknown> = {
+      product_id: wcProdId,
+      quantity: line.qty,
+    };
+    if (line.wcVariationId) {
+      item.variation_id = line.wcVariationId;
+    }
+    return item;
+  });
+
+  // Validate that all line items have valid WC product IDs
+  const invalidLines = lineItems.filter((li) => !li.product_id);
+  if (invalidLines.length > 0) {
+    throw new Error(`Kan ikke oprette ordre: ${invalidLines.length} produkt(er) mangler WooCommerce ID`);
+  }
+
+  console.log("[order] Creating WC order with line_items:", JSON.stringify(lineItems));
+
   // Create order in WooCommerce
   const wcOrder = await wcPost<WcOrderResponse>("/orders", {
     payment_method: "worldline",
@@ -406,16 +433,7 @@ export async function createOrder(
       company: input.customerCompany || "",
       country: "DK",
     },
-    line_items: input.lines.map((line) => {
-      const item: Record<string, unknown> = {
-        product_id: line.wcProductId || Number(line.productId),
-        quantity: line.qty,
-      };
-      if (line.wcVariationId) {
-        item.variation_id = line.wcVariationId;
-      }
-      return item;
-    }),
+    line_items: lineItems,
     shipping_lines: input.shippingRateId
       ? [
           {
@@ -427,7 +445,18 @@ export async function createOrder(
         ]
       : [],
     customer_note: input.notes || "",
+    // Include pickup point info as order meta if selected
+    meta_data: input.pickupPointId
+      ? [
+          { key: "_pickup_point_id", value: input.pickupPointId },
+          { key: "_pickup_point_name", value: input.pickupPointName || "" },
+          { key: "_pickup_point_address", value: input.pickupPointAddress || "" },
+          { key: "_shipmondo_service_point", value: input.pickupPointId },
+        ]
+      : [],
   });
+
+  console.log(`[order] WC order created: #${wcOrder.number} (ID: ${wcOrder.id}), payment_url: ${wcOrder.payment_url ? 'yes' : 'none'}`);
 
   const subtotal = input.lines.reduce((sum, line) => sum + line.unitPrice * line.qty, 0);
   const total = parseFloat(wcOrder.total) || subtotal;

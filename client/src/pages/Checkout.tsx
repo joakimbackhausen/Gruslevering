@@ -36,6 +36,18 @@ interface ShippingRate {
   selected: boolean;
 }
 
+interface PickupPoint {
+  id: string;
+  name: string;
+  address: string;
+  zipcode: string;
+  city: string;
+  country: string;
+  distance: number | null;
+  openingHours: string | null;
+  carrier: string;
+}
+
 interface CustomerForm {
   firstName: string;
   lastName: string;
@@ -80,6 +92,10 @@ export default function Checkout() {
   const [shippingError, setShippingError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [pickupPoints, setPickupPoints] = useState<PickupPoint[]>([]);
+  const [selectedPickupPoint, setSelectedPickupPoint] = useState<PickupPoint | null>(null);
+  const [pickupLoading, setPickupLoading] = useState(false);
+  const [pickupError, setPickupError] = useState('');
 
   function getItemKey(item: { id: string; variant?: string }) {
     return item.variant ? `${item.id}-${item.variant}` : item.id;
@@ -170,10 +186,74 @@ export default function Checkout() {
     }
   }, [step, fetchShippingRates]);
 
+  /* ── Pickup point (pakkeshop) logic ──────────────────────── */
+  function needsPickupPoint(rate: ShippingRate | null): boolean {
+    if (!rate) return false;
+    if (rate.methodId !== 'shipmondo') return false;
+    const nameLower = rate.name.toLowerCase();
+    return nameLower.includes('pakkeshop') || nameLower.includes('dao') || nameLower.includes('gls') || nameLower.includes('udleveringssted') || nameLower.includes('pickup') || nameLower.includes('service point');
+  }
+
+  const fetchPickupPoints = useCallback(async (rate: ShippingRate) => {
+    if (!customer.zip || !needsPickupPoint(rate)) return;
+
+    setPickupLoading(true);
+    setPickupError('');
+    setPickupPoints([]);
+    setSelectedPickupPoint(null);
+
+    try {
+      const params = new URLSearchParams({
+        carrier: rate.name,
+        zip: customer.zip.trim(),
+        country: 'DK',
+      });
+      if (customer.address) {
+        params.set('address', `${customer.address}, ${customer.zip} ${customer.city}`);
+      }
+
+      const res = await fetch(`/api/pickup-points?${params.toString()}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Kunne ikke hente udleveringssteder');
+      }
+
+      const data = await res.json();
+      const points: PickupPoint[] = data.points || [];
+      setPickupPoints(points);
+
+      // Auto-select first point
+      if (points.length > 0) {
+        setSelectedPickupPoint(points[0]);
+      }
+    } catch (err: any) {
+      setPickupError(err.message || 'Kunne ikke hente pakkeshops');
+    } finally {
+      setPickupLoading(false);
+    }
+  }, [customer.zip, customer.address, customer.city]);
+
+  // When shipping rate changes, fetch pickup points if needed
+  useEffect(() => {
+    if (selectedShippingRate && needsPickupPoint(selectedShippingRate)) {
+      fetchPickupPoints(selectedShippingRate);
+    } else {
+      setPickupPoints([]);
+      setSelectedPickupPoint(null);
+      setPickupError('');
+    }
+  }, [selectedShippingRate, fetchPickupPoints]);
+
   /* ── Submit order ───────────────────────────────────────── */
   async function submitOrder() {
     if (!selectedShippingRate) {
       setSubmitError('V\u00e6lg venligst en leveringsmetode');
+      return;
+    }
+
+    // Validate pickup point selection for pakkeshop shipping
+    if (needsPickupPoint(selectedShippingRate) && !selectedPickupPoint) {
+      setSubmitError('V\u00e6lg venligst et udleveringssted / pakkeshop');
       return;
     }
 
@@ -190,7 +270,7 @@ export default function Checkout() {
     }
 
     try {
-      const body = {
+      const body: Record<string, unknown> = {
         customerName: `${customer.firstName} ${customer.lastName}`,
         customerEmail: customer.email,
         customerPhone: customer.phone,
@@ -213,6 +293,13 @@ export default function Checkout() {
           variantSelections: item.variantSelections,
         })),
       };
+
+      // Include pickup point data if selected
+      if (selectedPickupPoint) {
+        body.pickupPointId = selectedPickupPoint.id;
+        body.pickupPointName = selectedPickupPoint.name;
+        body.pickupPointAddress = `${selectedPickupPoint.address}, ${selectedPickupPoint.zipcode} ${selectedPickupPoint.city}`;
+      }
 
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -704,6 +791,87 @@ export default function Checkout() {
                       </div>
                     )}
 
+                    {/* Pickup point selection for pakkeshop/GLS/DAO */}
+                    {!shippingLoading && selectedShippingRate && needsPickupPoint(selectedShippingRate) && (
+                      <div className="mb-8">
+                        <h3 className="text-[17px] font-semibold text-[#1a1a1a] mb-3 flex items-center gap-2">
+                          <MapPin className="w-5 h-5 text-green-600" />
+                          V&aelig;lg udleveringssted
+                        </h3>
+
+                        {pickupLoading && (
+                          <div className="flex items-center gap-3 py-6 justify-center">
+                            <Loader2 className="w-5 h-5 text-green-600 animate-spin" />
+                            <span className="text-[14px] text-gray-500">Finder n&aelig;rmeste pakkeshops...</span>
+                          </div>
+                        )}
+
+                        {!pickupLoading && pickupError && (
+                          <div className="p-4 rounded-lg bg-red-50 border border-red-200 mb-3">
+                            <p className="text-[13px] text-red-600">{pickupError}</p>
+                            <button
+                              onClick={() => fetchPickupPoints(selectedShippingRate)}
+                              className="text-[13px] font-medium text-red-700 underline mt-2"
+                            >
+                              Pr&oslash;v igen
+                            </button>
+                          </div>
+                        )}
+
+                        {!pickupLoading && pickupPoints.length > 0 && (
+                          <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                            {pickupPoints.map((point) => {
+                              const isSelected = selectedPickupPoint?.id === point.id;
+                              return (
+                                <button
+                                  key={point.id}
+                                  onClick={() => setSelectedPickupPoint(point)}
+                                  className={`w-full flex items-start gap-3 p-4 rounded-lg border text-left transition-all ${
+                                    isSelected
+                                      ? 'border-green-500 bg-green-50/60 shadow-sm'
+                                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                                    <div
+                                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                        isSelected ? 'border-green-500' : 'border-gray-300'
+                                      }`}
+                                    >
+                                      {isSelected && (
+                                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[14px] font-semibold text-[#1a1a1a]">
+                                      {point.name}
+                                    </p>
+                                    <p className="text-[13px] text-gray-500 mt-0.5">
+                                      {point.address}, {point.zipcode} {point.city}
+                                    </p>
+                                    {point.distance && (
+                                      <p className="text-[12px] text-gray-400 mt-0.5">
+                                        {point.distance < 1000
+                                          ? `${Math.round(point.distance)} m`
+                                          : `${(point.distance / 1000).toFixed(1)} km`}
+                                      </p>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {!pickupLoading && !pickupError && pickupPoints.length === 0 && (
+                          <p className="text-[14px] text-gray-500 py-4">
+                            Ingen udleveringssteder fundet i n&aelig;rheden af {customer.zip}.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* No rates available */}
                     {!shippingLoading && !shippingError && shippingRates.length === 0 && (
                       <div className="mb-6 p-5 rounded-xl bg-yellow-50 border border-yellow-200">
@@ -731,7 +899,7 @@ export default function Checkout() {
                       </button>
                       <button
                         onClick={submitOrder}
-                        disabled={submitting || shippingLoading || !selectedShippingRate}
+                        disabled={submitting || shippingLoading || !selectedShippingRate || pickupLoading || (needsPickupPoint(selectedShippingRate) && !selectedPickupPoint)}
                         className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-3.5 px-8 rounded-lg transition-colors flex items-center gap-2"
                       >
                         {submitting ? (
@@ -798,12 +966,25 @@ export default function Checkout() {
                         </span>
                       </div>
                       {step >= 3 && selectedShippingRate && (
-                        <div className="flex justify-between text-[14px]">
-                          <span className="text-gray-500">Levering</span>
-                          <span className={`font-medium ${shippingCost === 0 ? 'text-green-600' : 'text-[#1a1a1a]'}`}>
-                            {selectedShippingRate.priceFormatted}
-                          </span>
-                        </div>
+                        <>
+                          <div className="flex justify-between text-[14px]">
+                            <span className="text-gray-500">Levering</span>
+                            <span className={`font-medium ${shippingCost === 0 ? 'text-green-600' : 'text-[#1a1a1a]'}`}>
+                              {selectedShippingRate.priceFormatted}
+                            </span>
+                          </div>
+                          {selectedPickupPoint && (
+                            <div className="text-[13px] text-gray-500 bg-gray-50 rounded-lg p-3 mt-1">
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-3.5 h-3.5 text-green-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-medium text-[#1a1a1a]">{selectedPickupPoint.name}</p>
+                                  <p>{selectedPickupPoint.address}, {selectedPickupPoint.zipcode} {selectedPickupPoint.city}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
                       <div className="border-t border-gray-100 pt-3 flex justify-between">
                         <span className="text-[16px] font-bold text-[#1a1a1a]">
