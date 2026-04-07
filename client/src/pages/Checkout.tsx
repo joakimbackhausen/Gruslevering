@@ -189,9 +189,19 @@ export default function Checkout() {
   /* ── Pickup point (pakkeshop) logic ──────────────────────── */
   function needsPickupPoint(rate: ShippingRate | null): boolean {
     if (!rate) return false;
+    // Only shipmondo methods can have pakkeshop
     if (rate.methodId !== 'shipmondo') return false;
     const nameLower = rate.name.toLowerCase();
-    return nameLower.includes('pakkeshop') || nameLower.includes('dao') || nameLower.includes('gls') || nameLower.includes('udleveringssted') || nameLower.includes('pickup') || nameLower.includes('service point');
+    // Match rates that specifically mention pakkeshop, pickup, udleveringssted, service point
+    // Also match "DAO" and "GLS" when combined with delivery keywords (pakkeshop is default for these)
+    if (nameLower.includes('pakkeshop') || nameLower.includes('udleveringssted') || nameLower.includes('pickup') || nameLower.includes('service point') || nameLower.includes('afhentn')) {
+      return true;
+    }
+    // DAO and GLS pakkeshop rates — match if it contains carrier name + typical keywords
+    // DAO rates are almost always pakkeshop, GLS can be both home delivery and pakkeshop
+    if (nameLower.includes('dao')) return true;
+    if (nameLower.includes('gls') && !nameLower.includes('erhverv') && !nameLower.includes('business') && !nameLower.includes('hjem')) return true;
+    return false;
   }
 
   const fetchPickupPoints = useCallback(async (rate: ShippingRate) => {

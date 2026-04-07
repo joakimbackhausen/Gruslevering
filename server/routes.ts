@@ -201,7 +201,7 @@ export async function registerRoutes(
     }
   });
 
-  // GET /api/pickup-points — find nearby pickup points for GLS/DAO via Shipmondo
+  // GET /api/pickup-points — find nearby pickup points for GLS/DAO
   app.get('/api/pickup-points', async (req, res) => {
     try {
       const { carrier, zip, country, address } = req.query as {
@@ -215,71 +215,144 @@ export async function registerRoutes(
         return res.status(400).json({ error: 'carrier and zip are required' });
       }
 
-      // Map shipping rate names to Shipmondo carrier codes
+      // Detect carrier from shipping rate name
       const carrierLower = carrier.toLowerCase();
-      let carrierCode = '';
-      if (carrierLower.includes('gls')) {
-        carrierCode = 'gls';
-      } else if (carrierLower.includes('dao')) {
+      let carrierCode = 'gls'; // default
+      if (carrierLower.includes('dao')) {
         carrierCode = 'dao';
-      } else if (carrierLower.includes('postnord') || carrierLower.includes('post nord')) {
-        carrierCode = 'pdk';
-      } else if (carrierLower.includes('bring')) {
-        carrierCode = 'bring';
-      } else {
-        // Default to gls
+      } else if (carrierLower.includes('gls')) {
         carrierCode = 'gls';
+      } else if (carrierLower.includes('postnord') || carrierLower.includes('post nord')) {
+        carrierCode = 'postnord';
       }
 
-      const countryCode = (country || 'DK').toUpperCase();
+      const countryISO = (country || 'DK').toUpperCase();
+      const street = address?.split(',')[0] || '';
 
-      // Use Shipmondo's public service point API
-      const params = new URLSearchParams({
-        carrier_code: carrierCode,
-        country_code: countryCode,
-        zipcode: zip,
-      });
-      if (address) {
-        params.set('address', address);
+      console.log(`[pickup] Fetching pickup points: carrier=${carrierCode}, zip=${zip}, country=${countryISO}, street=${street}`);
+
+      interface PickupPointResult {
+        id: string;
+        name: string;
+        address: string;
+        zipcode: string;
+        city: string;
+        country: string;
+        distance: number | null;
+        carrier: string;
       }
 
-      console.log(`[pickup] Fetching pickup points: carrier=${carrierCode}, zip=${zip}, country=${countryCode}`);
+      let points: PickupPointResult[] = [];
 
-      const apiUrl = `https://app.shipmondo.com/api/public/service_points?${params.toString()}`;
-      const response = await fetch(apiUrl, {
-        headers: { 'Accept': 'application/json' },
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        console.error(`[pickup] Shipmondo API error: ${response.status} ${text.slice(0, 300)}`);
-        // Fallback: try the alternative Shipmondo endpoint
-        const altUrl = `https://service-api.shipmondo.com/v2/pickup_points?carrier=${carrierCode}&country=${countryCode}&zip=${zip}${address ? `&address=${encodeURIComponent(address)}` : ''}`;
-        const altRes = await fetch(altUrl, {
-          headers: { 'Accept': 'application/json' },
-        });
-        if (!altRes.ok) {
-          throw new Error(`Shipmondo API ${response.status}`);
+      if (carrierCode === 'gls') {
+        // GLS Denmark free SOAP/XML API — no auth required
+        const glsUrl = `https://www.gls.dk/webservices_v4/wsShopFinder.asmx/SearchNearestParcelShops?street=${encodeURIComponent(street)}&zipcode=${encodeURIComponent(zip)}&countryIso3166A2=${countryISO}&Amount=15`;
+        const glsRes = await fetch(glsUrl);
+        if (!glsRes.ok) {
+          throw new Error(`GLS API ${glsRes.status}`);
         }
-        const altData = await altRes.json();
-        return res.json({ points: Array.isArray(altData) ? altData.slice(0, 20) : [] });
-      }
+        const xml = await glsRes.text();
 
-      const data = await response.json();
-      // Normalize the response
-      const points = (Array.isArray(data) ? data : data?.service_points || data?.pickup_points || [])
-        .slice(0, 20)
-        .map((p: any) => ({
-          id: p.id || p.service_point_id || p.number,
-          name: p.name || p.company_name || '',
-          address: p.address || p.address1 || p.visiting_address || '',
-          zipcode: p.zipcode || p.zip_code || p.zip || '',
-          city: p.city || '',
-          country: p.country || p.country_code || countryCode,
-          distance: p.distance || null,
-          openingHours: p.opening_hours || p.openingHours || null,
-          carrier: carrierCode,
-        }));
+        // Parse XML response — extract PakkeshopData elements
+        const shopRegex = /<PakkeshopData>([\s\S]*?)<\/PakkeshopData>/g;
+        let match;
+        while ((match = shopRegex.exec(xml)) !== null) {
+          const block = match[1];
+          const get = (tag: string) => {
+            const m = block.match(new RegExp(`<${tag}>(.*?)<\/${tag}>`));
+            return m ? m[1].trim() : '';
+          };
+          points.push({
+            id: get('Number'),
+            name: get('CompanyName').trim(),
+            address: get('Streetname'),
+            zipcode: get('ZipCode'),
+            city: get('CityName'),
+            country: countryISO,
+            distance: parseInt(get('DistanceMetersAsTheCrowFlies')) || null,
+            carrier: 'gls',
+          });
+        }
+      } else if (carrierCode === 'dao') {
+        // DAO — use Shipmondo API if credentials available, otherwise fallback to GLS-style
+        const shipmondoApiKey = process.env.SHIPMONDO_API_KEY;
+        if (shipmondoApiKey) {
+          const authHeader = 'Basic ' + Buffer.from(`${shipmondoApiKey}:`).toString('base64');
+          const smUrl = `https://app.shipmondo.com/api/public/v3/pickup_points?carrier_code=dao&country_code=${countryISO}&zipcode=${encodeURIComponent(zip)}${street ? `&address=${encodeURIComponent(street)}` : ''}`;
+          const smRes = await fetch(smUrl, {
+            headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+          });
+          if (smRes.ok) {
+            const data = await smRes.json();
+            const arr = Array.isArray(data) ? data : data?.pickup_points || data?.service_points || [];
+            points = arr.slice(0, 15).map((p: any) => ({
+              id: String(p.id || p.number || ''),
+              name: p.name || p.company_name || '',
+              address: p.address || p.address1 || '',
+              zipcode: p.zipcode || p.zip_code || '',
+              city: p.city || '',
+              country: countryISO,
+              distance: p.distance ? Math.round(p.distance) : null,
+              carrier: 'dao',
+            }));
+          }
+        }
+
+        // If Shipmondo didn't return results, use DAO's direct API with public guest access
+        if (points.length === 0) {
+          try {
+            const daoUrl = `https://api.dao.as/DAOPakkeshop/FindPakkeshop.php?postnr=${encodeURIComponent(zip)}&antal=15`;
+            const daoRes = await fetch(daoUrl, { signal: AbortSignal.timeout(5000) });
+            if (daoRes.ok) {
+              const data = await daoRes.json();
+              if (data.resultat && Array.isArray(data.resultat)) {
+                points = data.resultat.slice(0, 15).map((p: any) => ({
+                  id: String(p.shopId || p.id || ''),
+                  name: p.navn || p.name || '',
+                  address: p.adresse || p.address || '',
+                  zipcode: p.postnr || p.zipcode || '',
+                  city: p.bynavn || p.city || '',
+                  country: countryISO,
+                  distance: p.afstand ? Math.round(p.afstand) : null,
+                  carrier: 'dao',
+                }));
+              }
+            }
+          } catch {
+            console.warn('[pickup] DAO direct API failed, no results available');
+          }
+        }
+
+        // Last resort for DAO: fall back to GLS shops (user can at least pick up nearby)
+        // This is not ideal but better than showing nothing
+        if (points.length === 0) {
+          console.warn('[pickup] No DAO pickup points found, falling back to GLS shops');
+          const glsUrl = `https://www.gls.dk/webservices_v4/wsShopFinder.asmx/SearchNearestParcelShops?street=${encodeURIComponent(street)}&zipcode=${encodeURIComponent(zip)}&countryIso3166A2=${countryISO}&Amount=15`;
+          const glsRes = await fetch(glsUrl);
+          if (glsRes.ok) {
+            const xml = await glsRes.text();
+            const shopRegex = /<PakkeshopData>([\s\S]*?)<\/PakkeshopData>/g;
+            let m2;
+            while ((m2 = shopRegex.exec(xml)) !== null) {
+              const block = m2[1];
+              const get = (tag: string) => {
+                const m3 = block.match(new RegExp(`<${tag}>(.*?)<\/${tag}>`));
+                return m3 ? m3[1].trim() : '';
+              };
+              points.push({
+                id: get('Number'),
+                name: get('CompanyName').trim(),
+                address: get('Streetname'),
+                zipcode: get('ZipCode'),
+                city: get('CityName'),
+                country: countryISO,
+                distance: parseInt(get('DistanceMetersAsTheCrowFlies')) || null,
+                carrier: 'dao',
+              });
+            }
+          }
+        }
+      }
 
       console.log(`[pickup] Found ${points.length} pickup points for ${carrierCode} in ${zip}`);
       res.json({ points });
