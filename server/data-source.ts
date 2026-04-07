@@ -691,6 +691,11 @@ function buildVariantsFromWc(
 export async function syncFromWooCommerce(): Promise<void> {
   console.log("[wc-sync] Syncing categories...");
 
+  // Auto-migrate: ensure category_ids column exists
+  try {
+    await db.execute(sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS category_ids jsonb DEFAULT '[]'`);
+  } catch { /* column already exists */ }
+
   // ── 1. Fetch and upsert categories (paginated) ──
   const wcCats = await fetchAllWcCategories();
 

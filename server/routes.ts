@@ -7,6 +7,7 @@ import {
   fetchPageBySlug,
   fetchSiteSettings,
   createOrder,
+  syncFromWooCommerce,
 } from "./data-source";
 import type { CreateOrderInput } from "./data-source";
 import { wcGet, calculateShippingRates } from "./woocommerce";
@@ -56,6 +57,25 @@ export async function registerRoutes(
     } catch (err) {
       console.error('Error fetching product:', err);
       res.status(500).json({ error: 'Failed to fetch product' });
+    }
+  });
+
+  // POST /api/sync — manually trigger WooCommerce sync
+  app.post('/api/sync', async (_req, res) => {
+    try {
+      console.log('[api] Manual sync triggered');
+      await syncFromWooCommerce();
+      const products = await fetchAllProducts();
+      const categories = await fetchCategories();
+      res.json({
+        ok: true,
+        products: products.length,
+        categories: categories.length,
+        emptyCategories: categories.filter(c => c.count === 0).length,
+      });
+    } catch (err) {
+      console.error('Error during manual sync:', err);
+      res.status(500).json({ error: 'Sync failed' });
     }
   });
 

@@ -74,10 +74,10 @@ app.use((req, res, next) => {
   // Initial WooCommerce sync on startup
   syncFromWooCommerce().catch(err => console.error("[wc] Initial sync failed:", err));
 
-  // Periodic sync every 10 minutes
+  // Periodic sync every 2 minutes
   setInterval(() => {
     syncFromWooCommerce().catch(err => console.error("[wc] Periodic sync failed:", err));
-  }, 10 * 60 * 1000);
+  }, 2 * 60 * 1000);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
