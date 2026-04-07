@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SmartImage from '@/components/SmartImage';
@@ -126,6 +126,110 @@ const HAVEGUIDE_ARTICLES = [
     image: 'https://gruslevering.dk/wp-content/uploads/2025/10/Pinjebark-20-40-pose-e1770390187304.png',
   },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Bestseller Slider                                                   */
+/* ------------------------------------------------------------------ */
+
+function BestsellerSlider({ products, loading }: { products: Product[]; loading: boolean }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [checkScroll, products]);
+
+  const scroll = (dir: 'left' | 'right') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardWidth = el.querySelector(':scope > *')?.getBoundingClientRect().width || 260;
+    const amount = dir === 'left' ? -(cardWidth + 16) * 2 : (cardWidth + 16) * 2;
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+      <Reveal>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px]">
+            Bestsellere
+          </h2>
+          <div className="flex items-center gap-2">
+            {/* Desktop arrows */}
+            <div className="hidden sm:flex items-center gap-1.5">
+              <button
+                onClick={() => scroll('left')}
+                disabled={!canScrollLeft}
+                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center transition-all hover:border-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-default disabled:hover:border-gray-200 disabled:hover:bg-transparent"
+                aria-label="Scroll venstre"
+              >
+                <ChevronLeft className="w-4 h-4 text-gray-700" />
+              </button>
+              <button
+                onClick={() => scroll('right')}
+                disabled={!canScrollRight}
+                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center transition-all hover:border-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-default disabled:hover:border-gray-200 disabled:hover:bg-transparent"
+                aria-label="Scroll højre"
+              >
+                <ChevronRight className="w-4 h-4 text-gray-700" />
+              </button>
+            </div>
+            <Link
+              href="/shop"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--grus-green)] hover:text-[var(--grus-green-hover)] transition-colors"
+            >
+              Se alle
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </Reveal>
+
+      {loading ? (
+        <div className="flex gap-4 overflow-hidden">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="min-w-[180px] sm:min-w-[220px] lg:min-w-[250px] bg-white rounded-2xl overflow-hidden border border-gray-100 flex-shrink-0">
+              <div className="aspect-square bg-gray-100 animate-pulse" />
+              <div className="p-3 space-y-2">
+                <div className="h-4 w-3/4 rounded bg-gray-100 animate-pulse" />
+                <div className="h-5 w-1/3 rounded bg-gray-100 animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto scroll-smooth pb-2 -mx-4 px-4 sm:mx-0 sm:px-0"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+        >
+          <style dangerouslySetInnerHTML={{ __html: `.bestseller-scroll::-webkit-scrollbar { display: none; }` }} />
+          {products.map((product) => (
+            <div key={product.id} className="min-w-[170px] sm:min-w-[220px] lg:min-w-[250px] max-w-[260px] flex-shrink-0">
+              <ProductCard product={product} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ================================================================
    HOME PAGE
@@ -348,9 +452,10 @@ export default function Home() {
                   Hvorfor kunderne v&aelig;lger os
                 </h2>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-5 gap-x-8 max-w-4xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-5 gap-x-8 max-w-5xl mx-auto">
                   {[
                     { icon: '🚚', text: 'Gratis levering i hele Danmark' },
+                    { icon: '⏱️', text: '98% af ordrer leveret indenfor 48 timer' },
                     { icon: '🇩🇰', text: 'Dansk familieejet siden 2008' },
                     { icon: '💰', text: 'Prisgaranti p\u00e5 mange produkter' },
                     { icon: '🔨', text: 'Kun kvalitetsmaterialer' },
@@ -363,55 +468,14 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-
-                <p className="text-xs text-gray-500 text-center mt-6">
-                  * 98% af ordre bliver leveret indenfor 48 timer.
-                </p>
               </div>
             </Reveal>
           </div>
         </section>
 
-        {/* ═══ BESTSELLERE ═══ */}
+        {/* ═══ BESTSELLERE (slider) ═══ */}
         <section className="pb-12 lg:pb-16">
-          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-            <Reveal>
-              <h2 className="font-display font-bold text-gray-900 text-xl sm:text-2xl lg:text-[28px] mb-6">
-                Bestsellere
-              </h2>
-            </Reveal>
-
-            {loadingProducts ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-100">
-                    <div className="aspect-square bg-gray-100 animate-pulse" />
-                    <div className="p-3 space-y-2">
-                      <div className="h-4 w-3/4 rounded bg-gray-100 animate-pulse" />
-                      <div className="h-5 w-1/3 rounded bg-gray-100 animate-pulse" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {bestsellers.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-                <div className="text-center mt-8">
-                  <Link
-                    href="/shop"
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--grus-green)] hover:text-[var(--grus-green-hover)] transition-colors"
-                  >
-                    Se alle produkter
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </>
-            )}
-          </div>
+          <BestsellerSlider products={bestsellers} loading={loadingProducts} />
         </section>
 
         {/* ═══ MEST LÆSTE FRA DEN STORE HAVEGUIDE ═══ */}
