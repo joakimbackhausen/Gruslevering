@@ -23,7 +23,16 @@ export async function registerRoutes(
       const featured = req.query.featured as string | undefined;
 
       if (category) {
-        products = products.filter(p => p.categorySlug === category);
+        // Find the category ID by slug, then match products using categoryIds array
+        const categories = await fetchCategories();
+        const matchedCat = categories.find(c => c.slug === category);
+        if (matchedCat) {
+          products = products.filter(p =>
+            p.categoryIds.includes(matchedCat.id) || p.categorySlug === category
+          );
+        } else {
+          products = products.filter(p => p.categorySlug === category);
+        }
       }
       if (featured === 'true') {
         products = products.filter(p => p.featured);

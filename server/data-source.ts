@@ -58,6 +58,7 @@ export interface Product {
   variants: VariantGroup[] | null;
   tieredPricing: TieredPrice[] | null;
   featured: boolean;
+  categoryIds: number[];
   url: string;
 }
 
@@ -154,23 +155,23 @@ async function refreshCache(): Promise<void> {
       .from(categoriesTable)
       .orderBy(asc(categoriesTable.sortOrder));
 
-    // Fetch product counts per category
-    const countRows = await db
-      .select({
-        categoryId: productsTable.categoryId,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(productsTable)
-      .groupBy(productsTable.categoryId);
+    // Fetch ALL products to count per category using categoryIds (multi-category)
+    const allDbProducts = await db.select().from(productsTable);
 
+    // Count products per category using the categoryIds array
     const countMap = new Map<number, number>();
-    for (const row of countRows) {
-      if (row.categoryId != null) {
-        countMap.set(row.categoryId, Number(row.count));
+    for (const p of allDbProducts) {
+      const catIds = (p.categoryIds as number[]) || [];
+      if (catIds.length > 0) {
+        for (const cid of catIds) {
+          countMap.set(cid, (countMap.get(cid) || 0) + 1);
+        }
+      } else if (p.categoryId != null) {
+        // Fallback to single categoryId if categoryIds not yet populated
+        countMap.set(p.categoryId, (countMap.get(p.categoryId) || 0) + 1);
       }
     }
 
-    // Build category list with counts (parents sum children when they have 0 direct products)
     // Build a map of id -> slug for parent URL resolution
     const catSlugById = new Map(dbCategories.map((c) => [c.id, c.slug]));
 
@@ -256,6 +257,7 @@ async function refreshCache(): Promise<void> {
         variants: decodeVariants(p.variants as VariantGroup[] | null),
         tieredPricing: (p.tieredPricing as TieredPrice[] | null) || null,
         featured: p.featured ?? false,
+        categoryIds: (p.categoryIds as number[]) || [],
         url: `/produkt/${p.slug}`,
       };
     });
@@ -491,6 +493,7 @@ function mapDbProduct(
     variants: decodeVariants(p.variants as VariantGroup[] | null),
     tieredPricing: (p.tieredPricing as TieredPrice[] | null) || null,
     featured: p.featured ?? false,
+    categoryIds: (p.categoryIds as number[]) || [],
     url: `/produkt/${p.slug}`,
   };
 }
@@ -792,20 +795,16 @@ export async function syncFromWooCommerce(): Promise<void> {
       }
     }
 
-    // Resolve category PG ID — prefer child (most specific) categories over parents.
-    // WooCommerce products often belong to both parent and child categories;
-    // we want the most specific one since parent counts auto-sum children.
+    // Resolve ALL category PG IDs for this product.
+    // WooCommerce products belong to multiple categories; store them all.
+    const allCategoryIds: number[] = [];
     let categoryId: number | null = null;
     for (const cat of product.categories) {
       const pgId = catMap.get(cat.id);
       if (pgId) {
-        // Prefer child categories (non-root) over parent categories
-        if (!wcParentIds.has(cat.id)) {
-          categoryId = pgId;
-          break; // Found a child category, use it
-        }
-        // Fall back to parent if no child found
-        if (categoryId === null) {
+        allCategoryIds.push(pgId);
+        // Primary categoryId: prefer child categories over parents
+        if (categoryId === null || (!wcParentIds.has(cat.id) && wcParentIds.has(product.categories.find(c => catMap.get(c.id) === categoryId)?.id ?? 0))) {
           categoryId = pgId;
         }
       }
@@ -832,6 +831,7 @@ export async function syncFromWooCommerce(): Promise<void> {
       variants,
       tieredPricing,
       categoryId,
+      categoryIds: allCategoryIds,
     };
 
     // Try to link existing row by slug (for initial migration)
@@ -859,6 +859,7 @@ export async function syncFromWooCommerce(): Promise<void> {
           variants: values.variants,
           tieredPricing: values.tieredPricing,
           categoryId: values.categoryId,
+          categoryIds: values.categoryIds,
         })
         .where(eq(productsTable.slug, product.slug));
     } else {
@@ -882,6 +883,7 @@ export async function syncFromWooCommerce(): Promise<void> {
             variants: values.variants,
             tieredPricing: values.tieredPricing,
             categoryId: values.categoryId,
+            categoryIds: values.categoryIds,
           },
         });
     }

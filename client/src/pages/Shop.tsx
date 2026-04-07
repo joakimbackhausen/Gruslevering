@@ -433,16 +433,30 @@ export default function Shop() {
     let result = products;
 
     if (selectedCategory) {
+      // Find the selected category's ID for multi-category matching
+      const selectedCat = categories.find((c) => c.slug === selectedCategory);
+      const selectedCatId = selectedCat?.id;
+
       // If selected category is a parent, also include all child category products
       const matchingSlugs = childSlugsByParent[selectedCategory];
       if (matchingSlugs) {
         // Parent category selected — show products from parent + all children
+        const childCatIds = new Set(
+          categories.filter((c) => matchingSlugs.has(c.slug) || c.slug === selectedCategory).map((c) => c.id)
+        );
         result = result.filter(
-          (p) => matchingSlugs.has(p.categorySlug) || p.parentCategorySlug === selectedCategory,
+          (p) =>
+            matchingSlugs.has(p.categorySlug) ||
+            p.parentCategorySlug === selectedCategory ||
+            (p.categoryIds && p.categoryIds.some((id) => childCatIds.has(id)))
         );
       } else {
-        // Child category selected — exact match only
-        result = result.filter((p) => p.categorySlug === selectedCategory);
+        // Child category selected — match via categoryIds or exact slug
+        result = result.filter(
+          (p) =>
+            p.categorySlug === selectedCategory ||
+            (selectedCatId && p.categoryIds && p.categoryIds.includes(selectedCatId))
+        );
       }
     }
 

@@ -57,6 +57,7 @@ export const products = pgTable("products", {
   seoTitle: text("seo_title").default(""),
   seoDescription: text("seo_description").default(""),
   categoryId: integer("category_id"),
+  categoryIds: jsonb("category_ids").default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

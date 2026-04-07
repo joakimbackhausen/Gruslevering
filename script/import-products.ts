@@ -301,24 +301,25 @@ function buildProductPayload(
     payload.images = product.images.map((img) => img.src);
   }
 
-  // Category — prefer child (most specific) categories over parents
+  // Category — store ALL category IDs + pick primary (prefer child over parent)
+  const allCategoryIds: number[] = [];
   if (product.categories.length > 0) {
     let fallbackId: number | null = null;
     for (const cat of product.categories) {
       const pgId = catMap.get(cat.id);
       if (pgId) {
+        allCategoryIds.push(pgId);
         if (!wcParentCatIds.has(cat.id)) {
-          payload.categoryId = pgId;
-          break; // Found a child category, use it
+          if (!payload.categoryId) payload.categoryId = pgId;
         }
         if (fallbackId === null) fallbackId = pgId;
       }
     }
-    // If no child category was found, use parent as fallback
     if (!payload.categoryId && fallbackId) {
       payload.categoryId = fallbackId;
     }
   }
+  payload.categoryIds = allCategoryIds;
 
   // Variants for variable products
   if (product.type === "variable" && variationDetails.length > 0) {
@@ -422,6 +423,7 @@ async function createProducts(
             variants: payload.variants ?? null,
             featured: payload.featured,
             categoryId: payload.categoryId ?? null,
+            categoryIds: payload.categoryIds ?? [],
           },
         });
       }

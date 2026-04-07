@@ -40,6 +40,7 @@ export interface Product {
   variants: VariantGroup[] | null;
   tieredPricing: TieredPrice[] | null;
   featured: boolean;
+  categoryIds: number[];
   url: string;
 }
 
