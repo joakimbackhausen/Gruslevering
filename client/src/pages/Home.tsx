@@ -235,7 +235,7 @@ export default function Home() {
                 │ (tall)   ├──────────┴──────────┤ (tall)   │
                 │          │   Plantekasser      │          │
                 └──────────┴─────────────────────┴──────────┘ */}
-            <div className="hidden lg:grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', gridTemplateRows: '2fr 1fr' }}>
+            <div className="hidden lg:grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', gridTemplateRows: '2fr 1fr', height: '580px' }}>
               {/* Granitskærver - col 1, spans both rows */}
               <Link
                 href={CATEGORY_TILES[0].href}
