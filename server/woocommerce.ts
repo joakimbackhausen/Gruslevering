@@ -457,11 +457,15 @@ export async function storeApiCheckout(input: CheckoutInput): Promise<CheckoutRe
     billing_address?: { email: string };
   };
 
-  const redirectUrl = result.payment_result?.redirect_url || "";
+  const rawRedirectUrl = result.payment_result?.redirect_url || "";
   const orderNumber = result.order_number || String(result.order_id);
   const totalPrice = result.totals?.total_price || "0";
 
-  console.log(`[store-api-checkout] Order #${orderNumber} created (ID: ${result.order_id}), status: ${result.status}, redirect: ${redirectUrl ? 'yes' : 'none'}`);
+  console.log(`[store-api-checkout] Order #${orderNumber} created (ID: ${result.order_id}), status: ${result.status}`);
+  console.log(`[store-api-checkout] Raw redirect URL: ${rawRedirectUrl}`);
+
+  // Rewrite return URLs in the payment gateway redirect to point to our headless frontend
+  const redirectUrl = rewritePaymentRedirectUrl(rawRedirectUrl, result.order_id);
 
   return {
     orderId: result.order_id,
@@ -470,4 +474,84 @@ export async function storeApiCheckout(input: CheckoutInput): Promise<CheckoutRe
     paymentRedirectUrl: redirectUrl,
     total: totalPrice,
   };
+}
+
+/**
+ * Rewrite return/callback URLs in the payment gateway redirect URL
+ * so that after payment, the user returns to our headless frontend
+ * instead of the WooCommerce site.
+ */
+function rewritePaymentRedirectUrl(url: string, orderId: number): string {
+  if (!url) return url;
+
+  const appUrl = process.env.APP_URL || "";
+  if (!appUrl) {
+    console.warn("[payment] APP_URL not set — cannot rewrite payment return URLs. Users will return to WooCommerce site.");
+    return url;
+  }
+
+  const wcUrl = process.env.WC_URL || "https://gruslevering.dk";
+
+  try {
+    const parsed = new URL(url);
+
+    // Bambora/Worldline typically uses these query params for return URLs:
+    // accepturl, cancelurl, callbackurl, declineurl
+    const urlParams = ["accepturl", "cancelurl", "declineurl"];
+    let modified = false;
+
+    for (const param of urlParams) {
+      const value = parsed.searchParams.get(param);
+      if (value && value.includes(wcUrl)) {
+        let newValue = value;
+        // Replace WC order-received URL with our confirmation page
+        if (param === "accepturl") {
+          newValue = `${appUrl}/ordre-bekraeftelse?order_id=${orderId}`;
+        } else if (param === "cancelurl" || param === "declineurl") {
+          newValue = `${appUrl}/checkout?cancelled=true&order_id=${orderId}`;
+        }
+        parsed.searchParams.set(param, newValue);
+        modified = true;
+        console.log(`[payment] Rewrote ${param}: ${value.slice(0, 80)}... → ${newValue}`);
+      }
+    }
+
+    // Also check if the URL itself (not params) contains encoded return URLs
+    // Some gateways encode the return URL in the path or hash
+    if (!modified) {
+      // Try replacing WC URLs in the full URL string
+      let urlStr = url;
+      const wcEncoded = encodeURIComponent(wcUrl);
+
+      // Replace encoded WC order-received URLs
+      const orderReceivedPattern = new RegExp(
+        wcEncoded.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^&]*order-received[^&]*',
+        'gi'
+      );
+      if (orderReceivedPattern.test(urlStr)) {
+        urlStr = urlStr.replace(orderReceivedPattern, encodeURIComponent(`${appUrl}/ordre-bekraeftelse?order_id=${orderId}`));
+        modified = true;
+      }
+
+      // Replace encoded WC cart/cancel URLs
+      const cancelPattern = new RegExp(
+        wcEncoded.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^&]*cancel_order[^&]*',
+        'gi'
+      );
+      if (cancelPattern.test(urlStr)) {
+        urlStr = urlStr.replace(cancelPattern, encodeURIComponent(`${appUrl}/checkout?cancelled=true&order_id=${orderId}`));
+        modified = true;
+      }
+
+      if (modified) {
+        console.log("[payment] Rewrote encoded return URLs in payment redirect");
+        return urlStr;
+      }
+    }
+
+    return modified ? parsed.toString() : url;
+  } catch {
+    console.warn("[payment] Could not parse redirect URL for rewriting:", url.slice(0, 100));
+    return url;
+  }
 }

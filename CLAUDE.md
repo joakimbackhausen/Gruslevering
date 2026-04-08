@@ -88,6 +88,8 @@ script/
 - `WC_URL` - WooCommerce site URL (default: https://gruslevering.dk)
 - `WC_CONSUMER_KEY` - WooCommerce REST API consumer key (paakraevet)
 - `WC_CONSUMER_SECRET` - WooCommerce REST API consumer secret (paakraevet)
+- `APP_URL` - Headless frontend URL, e.g. https://shop.gruslevering.dk (bruges til payment redirects)
+- `SHIPMONDO_API_KEY` - Shipmondo API key (valgfri, til DAO pakkeshop-opslag)
 
 ## Deploy (Railway)
 
