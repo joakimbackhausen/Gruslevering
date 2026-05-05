@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import crypto from "crypto";
 import {
   fetchAllProducts,
   fetchProductById,
@@ -8,6 +9,10 @@ import {
   fetchSiteSettings,
   createOrder,
   syncFromWooCommerce,
+  syncSingleProduct,
+  deleteProductByWcId,
+  syncSingleCategory,
+  deleteCategoryByWcId,
 } from "./data-source";
 import type { CreateOrderInput } from "./data-source";
 import { wcGet, calculateShippingRates } from "./woocommerce";
@@ -57,6 +62,78 @@ export async function registerRoutes(
     } catch (err) {
       console.error('Error fetching product:', err);
       res.status(500).json({ error: 'Failed to fetch product' });
+    }
+  });
+
+  // POST /api/wc-webhook — WooCommerce webhook for live product/category updates
+  // Configure in WC admin: WooCommerce → Settings → Advanced → Webhooks
+  // Topic: "Product created/updated/deleted" or "Coupon...". Set the secret as WC_WEBHOOK_SECRET env var.
+  app.post('/api/wc-webhook', async (req, res) => {
+    try {
+      const topic = (req.headers['x-wc-webhook-topic'] as string) || '';
+      const signature = (req.headers['x-wc-webhook-signature'] as string) || '';
+      const source = (req.headers['x-wc-webhook-source'] as string) || '';
+      const rawBody = (req as any).rawBody as Buffer | undefined;
+
+      console.log(`[webhook] Received: topic=${topic}, source=${source}`);
+
+      // Verify webhook signature if secret is configured
+      const secret = process.env.WC_WEBHOOK_SECRET;
+      if (secret && rawBody) {
+        const expected = crypto
+          .createHmac('sha256', secret)
+          .update(rawBody)
+          .digest('base64');
+        if (expected !== signature) {
+          console.warn(`[webhook] Invalid signature. Expected ${expected.slice(0, 20)}..., got ${signature.slice(0, 20)}...`);
+          return res.status(401).json({ error: 'Invalid signature' });
+        }
+      }
+
+      // Acknowledge immediately, process asynchronously
+      res.status(200).json({ ok: true });
+
+      const payload = req.body as { id?: number };
+      const wcId = payload?.id;
+      if (!wcId) {
+        console.warn('[webhook] No id in payload, skipping');
+        return;
+      }
+
+      // Process based on topic
+      try {
+        if (topic.startsWith('product.')) {
+          if (topic === 'product.deleted' || topic === 'product.restored') {
+            if (topic === 'product.deleted') {
+              await deleteProductByWcId(wcId);
+            } else {
+              await syncSingleProduct(wcId);
+            }
+          } else {
+            // product.created or product.updated
+            await syncSingleProduct(wcId);
+          }
+        } else if (topic.startsWith('product_category.') || topic.startsWith('category.')) {
+          if (topic.endsWith('.deleted')) {
+            await deleteCategoryByWcId(wcId);
+          } else {
+            await syncSingleCategory(wcId);
+          }
+        } else if (topic.startsWith('order.')) {
+          // Could refresh order status here if needed in future
+          console.log(`[webhook] Order event ignored: ${topic} #${wcId}`);
+        } else {
+          console.log(`[webhook] Unhandled topic: ${topic}`);
+        }
+      } catch (err: any) {
+        console.error(`[webhook] Processing failed for ${topic} #${wcId}:`, err.message);
+      }
+    } catch (err: any) {
+      console.error('[webhook] Handler error:', err);
+      // Don't 500 — webhooks should be idempotent and not retry on errors
+      if (!res.headersSent) {
+        res.status(200).json({ ok: false, error: err.message });
+      }
     }
   });
 

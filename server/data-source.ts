@@ -913,6 +913,184 @@ export async function syncFromWooCommerce(): Promise<void> {
 
   console.log(`[wc-sync] Sync complete: ${productCount} products, ${catMap.size} categories`);
 
-  // ── 3. Refresh in-memory cache ──
+  // ── 3. Soft-delete products no longer in WC ──
+  // Get all WC product IDs we just synced
+  const liveWcIds = new Set(wcProducts.map((p) => p.id));
+  // Find PG products with wcId set but not in liveWcIds — these have been removed/unpublished
+  const allDbProducts = await db.select({ id: productsTable.id, wcId: productsTable.wcId, slug: productsTable.slug }).from(productsTable);
+  const orphaned = allDbProducts.filter((p) => p.wcId !== null && !liveWcIds.has(p.wcId));
+
+  if (orphaned.length > 0) {
+    console.log(`[wc-sync] Removing ${orphaned.length} products no longer in WooCommerce`);
+    for (const o of orphaned) {
+      await db.delete(productsTable).where(eq(productsTable.id, o.id));
+    }
+  }
+
+  // ── 4. Refresh in-memory cache ──
   await refreshCache();
+}
+
+/**
+ * Sync a single product from WooCommerce by WC ID.
+ * Used by webhooks for live updates.
+ */
+export async function syncSingleProduct(wcId: number): Promise<void> {
+  console.log(`[wc-webhook] Syncing single product wcId=${wcId}`);
+  try {
+    const product = await wcGet<WcProduct>(`/products/${wcId}`);
+
+    // Check if it's published — otherwise treat as deletion
+    if ((product as any).status && (product as any).status !== "publish") {
+      console.log(`[wc-webhook] Product ${wcId} is not published, removing from DB`);
+      await deleteProductByWcId(wcId);
+      return;
+    }
+
+    // Get all categories for resolving PG IDs
+    const dbCats = await db.select().from(categoriesTable);
+    const catMap = new Map<number, number>();
+    for (const c of dbCats) {
+      if (c.wcId) catMap.set(c.wcId, c.id);
+    }
+    const wcParentIds = new Set(dbCats.filter((c) => c.parentId === null).map((c) => c.wcId).filter(Boolean) as number[]);
+
+    const regularPrice = parseWcPrice(product.regular_price);
+    const effectivePrice = parseWcPrice(product.price);
+    const salePrice = parseWcPrice(product.sale_price);
+    const basePrice = regularPrice || effectivePrice;
+
+    let variants: VariantGroup[] | null = null;
+    if (product.type === "variable" && product.variations.length > 0) {
+      try {
+        const allVariations: WcVariation[] = [];
+        let vPage = 1;
+        while (true) {
+          const vBatch = await wcGet<WcVariation[]>(
+            `/products/${product.id}/variations`,
+            { per_page: "100", page: String(vPage) }
+          );
+          if (vBatch.length === 0) break;
+          allVariations.push(...vBatch);
+          if (vBatch.length < 100) break;
+          vPage++;
+        }
+        variants = buildVariantsFromWc(product, allVariations, basePrice);
+      } catch (err: any) {
+        console.warn(`[wc-webhook] Could not fetch variations: ${err.message}`);
+      }
+    }
+
+    const allCategoryIds: number[] = [];
+    let categoryId: number | null = null;
+    for (const cat of product.categories) {
+      const pgId = catMap.get(cat.id);
+      if (pgId) {
+        allCategoryIds.push(pgId);
+        if (categoryId === null || !wcParentIds.has(cat.id)) {
+          categoryId = pgId;
+        }
+      }
+    }
+
+    const description = stripHtml(product.description || product.short_description || "");
+    const tieredPricing = parseTieredPricing(product);
+
+    const values = {
+      wcId: product.id,
+      title: product.name,
+      slug: product.slug,
+      sku: product.sku || "",
+      basePrice: basePrice.toFixed(2),
+      salePrice: salePrice > 0 && salePrice < basePrice ? salePrice.toFixed(2) : null,
+      description,
+      unit: "bigbag" as const,
+      deliveryIncluded: true,
+      featured: product.featured,
+      image: product.images.length > 0 ? product.images[0].src : "",
+      images: product.images.map((img) => img.src),
+      variants,
+      tieredPricing,
+      categoryId,
+      categoryIds: allCategoryIds,
+    };
+
+    const existing = await db.select({ id: productsTable.id }).from(productsTable).where(eq(productsTable.wcId, product.id)).limit(1);
+
+    if (existing.length > 0) {
+      await db.update(productsTable).set(values).where(eq(productsTable.wcId, product.id));
+    } else {
+      await db.insert(productsTable).values(values);
+    }
+
+    // Invalidate cache so next read picks up changes
+    cacheTimestamp = 0;
+    console.log(`[wc-webhook] Product ${wcId} synced`);
+  } catch (err: any) {
+    console.error(`[wc-webhook] Failed to sync product ${wcId}: ${err.message}`);
+    throw err;
+  }
+}
+
+/**
+ * Delete a product by WC ID. Used by webhook on product.deleted.
+ */
+export async function deleteProductByWcId(wcId: number): Promise<void> {
+  await db.delete(productsTable).where(eq(productsTable.wcId, wcId));
+  cacheTimestamp = 0;
+  console.log(`[wc-webhook] Product wcId=${wcId} deleted`);
+}
+
+/**
+ * Sync a single category from WooCommerce by WC ID.
+ */
+export async function syncSingleCategory(wcId: number): Promise<void> {
+  console.log(`[wc-webhook] Syncing single category wcId=${wcId}`);
+  try {
+    const cat = await wcGet<WcCategory>(`/products/categories/${wcId}`);
+
+    // Resolve parent PG ID
+    let parentPgId: number | null = null;
+    if (cat.parent !== 0) {
+      const parentRow = await db.select({ id: categoriesTable.id }).from(categoriesTable).where(eq(categoriesTable.wcId, cat.parent)).limit(1);
+      if (parentRow.length > 0) parentPgId = parentRow[0].id;
+    }
+
+    const existing = await db.select({ id: categoriesTable.id }).from(categoriesTable).where(eq(categoriesTable.wcId, cat.id)).limit(1);
+
+    if (existing.length > 0) {
+      await db.update(categoriesTable)
+        .set({
+          name: cat.name,
+          slug: cat.slug,
+          image: cat.image?.src || "",
+          parentId: parentPgId,
+        })
+        .where(eq(categoriesTable.wcId, cat.id));
+    } else {
+      await db.insert(categoriesTable).values({
+        wcId: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        image: cat.image?.src || "",
+        sortOrder: 999,
+        parentId: parentPgId,
+      });
+    }
+
+    cacheTimestamp = 0;
+    console.log(`[wc-webhook] Category ${wcId} synced`);
+  } catch (err: any) {
+    console.error(`[wc-webhook] Failed to sync category ${wcId}: ${err.message}`);
+    throw err;
+  }
+}
+
+/**
+ * Delete a category by WC ID.
+ */
+export async function deleteCategoryByWcId(wcId: number): Promise<void> {
+  await db.delete(categoriesTable).where(eq(categoriesTable.wcId, wcId));
+  cacheTimestamp = 0;
+  console.log(`[wc-webhook] Category wcId=${wcId} deleted`);
 }
