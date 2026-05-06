@@ -56,27 +56,27 @@ const CATEGORY_TILES = [
   {
     label: 'Granitskærver',
     href: '/shop/granitskaerver-sten-pyntesten/granitskaerver',
-    image: 'https://gruslevering.dk/wp-content/uploads/2019/11/Stort-udvalg-af-grus-sand-og-granitsk%C3%A6rver-2.png',
+    image: '/images/categories/granitskaerver.jpg',
   },
   {
     label: 'Muld og jord',
     href: '/shop/muldjord',
-    image: 'https://gruslevering.dk/wp-content/uploads/2026/02/ChatGPT-Image-26.-feb.-2026-22.48.35-1024x683.png',
+    image: '/images/categories/muld.jpg',
   },
   {
-    label: 'Plante kasser',
+    label: 'Pyntesten',
     href: '/shop/granitskaerver-sten-pyntesten/pyntesten-kategori',
-    image: 'https://gruslevering.dk/wp-content/uploads/2019/11/Hvide-noeddesten-3264-768x1024.jpeg',
+    image: '/images/categories/pyntesten.jpg',
   },
   {
     label: 'Dækbark',
     href: '/shop/traeflis',
-    image: 'https://gruslevering.dk/wp-content/uploads/2023/09/AA9AC17E-D91E-429A-8025-D01EBA655143-e1773662030197-773x1024.jpeg',
+    image: '/images/categories/daekbark.jpg',
   },
   {
     label: 'Plantekasser',
     href: '/shop/hus-og-have/hoejbede-og-plantekasser',
-    image: 'https://gruslevering.dk/wp-content/uploads/2022/07/44606_BM1.jpeg',
+    image: '/images/categories/plantekasser.jpg',
     wide: true,
   },
 ];
